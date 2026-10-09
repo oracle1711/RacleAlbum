@@ -1,21 +1,32 @@
 # RacleAlbum
 
-A personal website to upload photos and text, accessible from any device.
+A personal website to upload photos and text notes. Accessible from any device.
 
-## Free Live Site
-
-Once GitHub Pages is enabled, the site will be available at:
-
+## Live Site
 **https://oracle1711.github.io/RacleAlbum/**
 
-## How to enable the free domain (GitHub Pages)
+(Make sure GitHub Pages is enabled: Settings → Pages → Deploy from branch `main` / root)
 
-1. Go to your repo: https://github.com/oracle1711/RacleAlbum
-2. Click **Settings** (top menu)
-3. In the left sidebar, click **Pages**
-4. Under **Source**, select **Deploy from a branch**
-5. Choose branch: **main**
-6. Folder: **/ (root)**
-7. Click **Save**
+## Current Features
+- Clean modern dark UI
+- Register / Login (local demo)
+- Upload photos + text captions
+- Personal gallery view
+- Works offline / stores data in your browser (localStorage)
 
-After 1–2 minutes, your free website will be live!
+## How it works right now
+Everything is stored in your browser's local storage.  
+This means:
+- Data stays on the device you used
+- Different devices won't share the same photos yet
+
+## Next Steps (coming)
+1. Connect a real free backend (Supabase or Firebase)
+2. Real login that works across all your devices
+3. Cloud photo storage
+4. Ability to delete / edit items
+
+## Tech
+- Pure HTML + CSS + JavaScript
+- No frameworks (fast & simple)
+- Ready for GitHub Pages
