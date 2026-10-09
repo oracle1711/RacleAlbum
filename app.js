@@ -1,4 +1,109 @@
-// Simple local storage based app (demo until we connect real backend)
+// ===== LIVE SCI-FI BACKGROUND =====
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+let mouse = { x: null, y: null };
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+class Particle {
+  constructor() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * 1.8 + 0.4;
+    this.speedX = (Math.random() - 0.5) * 0.4;
+    this.speedY = (Math.random() - 0.5) * 0.4;
+    this.opacity = Math.random() * 0.5 + 0.2;
+    // Cyan to purple tones
+    this.color = Math.random() > 0.6 
+      ? `rgba(167, 139, 250, ${this.opacity})`  // purple
+      : `rgba(34, 211, 238, ${this.opacity})`;  // cyan
+  }
+
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+
+    // Wrap around edges
+    if (this.x < 0) this.x = canvas.width;
+    if (this.x > canvas.width) this.x = 0;
+    if (this.y < 0) this.y = canvas.height;
+    if (this.y > canvas.height) this.y = 0;
+  }
+
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+  }
+}
+
+function initParticles() {
+  particles = [];
+  const count = Math.floor((canvas.width * canvas.height) / 9000);
+  for (let i = 0; i < count; i++) {
+    particles.push(new Particle());
+  }
+}
+
+function connectParticles() {
+  for (let a = 0; a < particles.length; a++) {
+    for (let b = a + 1; b < particles.length; b++) {
+      const dx = particles[a].x - particles[b].x;
+      const dy = particles[a].y - particles[b].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 110) {
+        const opacity = 1 - dist / 110;
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(34, 211, 238, ${opacity * 0.12})`;
+        ctx.lineWidth = 0.6;
+        ctx.moveTo(particles[a].x, particles[a].y);
+        ctx.lineTo(particles[b].x, particles[b].y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function animateBackground() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Soft radial glow in center
+  const gradient = ctx.createRadialGradient(
+    canvas.width / 2, canvas.height / 2, 0,
+    canvas.width / 2, canvas.height / 2, canvas.width * 0.6
+  );
+  gradient.addColorStop(0, 'rgba(8, 145, 178, 0.04)');
+  gradient.addColorStop(0.5, 'rgba(124, 58, 237, 0.02)');
+  gradient.addColorStop(1, 'transparent');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  particles.forEach(p => {
+    p.update();
+    p.draw();
+  });
+
+  connectParticles();
+  requestAnimationFrame(animateBackground);
+}
+
+// Initialize background
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  initParticles();
+});
+
+resizeCanvas();
+initParticles();
+animateBackground();
+
+// ===== APP LOGIC =====
 
 let currentUser = null;
 let items = [];
@@ -23,11 +128,6 @@ function init() {
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-
-  // Update nav highlight if needed
-  if (id === 'gallery' || id === 'upload') {
-    // already logged in view
-  }
 }
 
 // Tabs
@@ -131,7 +231,6 @@ function handleUpload(e) {
 
   const title = document.getElementById('itemTitle').value.trim();
   const text = document.getElementById('itemText').value.trim();
-  const photoInput = document.getElementById('itemPhoto');
   const preview = document.getElementById('photoPreview');
 
   const newItem = {
