@@ -24,8 +24,8 @@
   <section id="auth" class="section active">
     <div class="auth-container">
       <div class="auth-card">
-        <h1>Welcome to RacleAlbum</h1>
-        <p class="subtitle">Upload photos & notes. Access from any device.</p>
+        <h1>RacleAlbum</h1>
+        <p class="subtitle">Secure Photo & Data Interface // Access Anywhere</p>
 
         <div class="tabs">
           <button class="tab active" onclick="switchTab('login')">Login</button>
@@ -35,34 +35,34 @@
         <!-- Login Form -->
         <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
           <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="loginEmail" placeholder="you@example.com" required>
+            <label>Identity // Email</label>
+            <input type="email" id="loginEmail" placeholder="user@network.com" required>
           </div>
           <div class="form-group">
-            <label>Password</label>
+            <label>Access Key // Password</label>
             <input type="password" id="loginPassword" placeholder="••••••••" required>
           </div>
-          <button type="submit" class="btn primary full">Login</button>
+          <button type="submit" class="btn primary full">Initialize Session</button>
         </form>
 
         <!-- Register Form -->
         <form id="registerForm" class="auth-form hidden" onsubmit="handleRegister(event)">
           <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="regName" placeholder="Your name" required>
+            <label>Codename // Name</label>
+            <input type="text" id="regName" placeholder="Your identifier" required>
           </div>
           <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="regEmail" placeholder="you@example.com" required>
+            <label>Identity // Email</label>
+            <input type="email" id="regEmail" placeholder="user@network.com" required>
           </div>
           <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="regPassword" placeholder="At least 6 characters" required minlength="6">
+            <label>Access Key // Password</label>
+            <input type="password" id="regPassword" placeholder="Minimum 6 characters" required minlength="6">
           </div>
-          <button type="submit" class="btn primary full">Create Account</button>
+          <button type="submit" class="btn primary full">Create Identity</button>
         </form>
 
-        <p class="note">Free • Secure • Private</p>
+        <p class="note">Encrypted • Private • Free Tier</p>
       </div>
     </div>
   </section>
