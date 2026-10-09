@@ -3,44 +3,125 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RacleAlbum</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
-    .container {
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      padding: 40px 30px;
-      max-width: 500px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    }
-    h1 { font-size: 2.5rem; margin-bottom: 10px; }
-    p { font-size: 1.1rem; opacity: 0.9; margin-bottom: 25px; line-height: 1.5; }
-    .badge {
-      display: inline-block;
-      background: rgba(255,255,255,0.2);
-      padding: 8px 16px;
-      border-radius: 50px;
-      font-size: 0.9rem;
-    }
-  </style>
+  <title>RacleAlbum - Your Personal Photo & Text Space</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <h1>RacleAlbum</h1>
-    <p>Your personal space to upload photos and text.<br>Accessible from any device.</p>
-    <div class="badge">Coming soon • Free on GitHub Pages</div>
-  </div>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-brand">RacleAlbum</div>
+    <div class="nav-links" id="navLinks">
+      <button class="nav-btn" onclick="showSection('gallery')">Gallery</button>
+      <button class="nav-btn" onclick="showSection('upload')">Upload</button>
+      <button class="nav-btn primary" id="authBtn" onclick="showSection('auth')">Login</button>
+    </div>
+  </nav>
+
+  <!-- Landing / Auth Section -->
+  <section id="auth" class="section active">
+    <div class="auth-container">
+      <div class="auth-card">
+        <h1>Welcome to RacleAlbum</h1>
+        <p class="subtitle">Upload photos & notes. Access from any device.</p>
+
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('login')">Login</button>
+          <button class="tab" onclick="switchTab('register')">Register</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="you@example.com" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn primary full">Login</button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="registerForm" class="auth-form hidden" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="regName" placeholder="Your name" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="regEmail" placeholder="you@example.com" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="regPassword" placeholder="At least 6 characters" required minlength="6">
+          </div>
+          <button type="submit" class="btn primary full">Create Account</button>
+        </form>
+
+        <p class="note">Free • Secure • Private</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery Section -->
+  <section id="gallery" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Your Gallery</h2>
+        <button class="btn" onclick="showSection('upload')">+ Add New</button>
+      </div>
+      <div id="galleryGrid" class="gallery-grid">
+        <!-- Items will be loaded here -->
+        <div class="empty-state">
+          <p>No photos or notes yet.</p>
+          <button class="btn primary" onclick="showSection('upload')">Upload your first item</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Upload Section -->
+  <section id="upload" class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Upload</h2>
+        <button class="btn" onclick="showSection('gallery')">← Back to Gallery</button>
+      </div>
+
+      <div class="upload-card">
+        <form id="uploadForm" onsubmit="handleUpload(event)">
+          <div class="form-group">
+            <label>Title / Caption</label>
+            <input type="text" id="itemTitle" placeholder="What is this about?" required>
+          </div>
+
+          <div class="form-group">
+            <label>Text / Note (optional)</label>
+            <textarea id="itemText" rows="4" placeholder="Write something..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Photo (optional)</label>
+            <div class="file-drop" id="fileDrop">
+              <input type="file" id="itemPhoto" accept="image/*" onchange="previewPhoto(event)">
+              <div class="drop-content">
+                <span>📷</span>
+                <p>Click or drag a photo here</p>
+              </div>
+            </div>
+            <img id="photoPreview" class="photo-preview hidden" alt="Preview">
+          </div>
+
+          <button type="submit" class="btn primary full">Save to Album</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
 </body>
 </html>
