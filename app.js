@@ -2,7 +2,6 @@
 const canvas = document.getElementById('bgCanvas');
 const ctx = canvas.getContext('2d');
 let particles = [];
-let mouse = { x: null, y: null };
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -13,12 +12,12 @@ class Particle {
   constructor() {
     this.x = Math.random() * canvas.width;
     this.y = Math.random() * canvas.height;
-    this.size = Math.random() * 1.8 + 0.4;
-    this.speedX = (Math.random() - 0.5) * 0.4;
-    this.speedY = (Math.random() - 0.5) * 0.4;
-    this.opacity = Math.random() * 0.5 + 0.2;
+    this.size = Math.random() * 2.2 + 0.6;
+    this.speedX = (Math.random() - 0.5) * 0.55;
+    this.speedY = (Math.random() - 0.5) * 0.55;
+    this.opacity = Math.random() * 0.6 + 0.3;
     // Cyan to purple tones
-    this.color = Math.random() > 0.6 
+    this.color = Math.random() > 0.55 
       ? `rgba(167, 139, 250, ${this.opacity})`  // purple
       : `rgba(34, 211, 238, ${this.opacity})`;  // cyan
   }
@@ -39,12 +38,19 @@ class Particle {
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
     ctx.fillStyle = this.color;
     ctx.fill();
+
+    // Small glow
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = this.color.replace(/[\d.]+\)$/, '0.08)');
+    ctx.fill();
   }
 }
 
 function initParticles() {
   particles = [];
-  const count = Math.floor((canvas.width * canvas.height) / 9000);
+  // More particles for stronger visual effect
+  const count = Math.floor((canvas.width * canvas.height) / 5500);
   for (let i = 0; i < count; i++) {
     particles.push(new Particle());
   }
@@ -57,11 +63,11 @@ function connectParticles() {
       const dy = particles[a].y - particles[b].y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist < 110) {
-        const opacity = 1 - dist / 110;
+      if (dist < 130) {
+        const opacity = 1 - dist / 130;
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(34, 211, 238, ${opacity * 0.12})`;
-        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = `rgba(34, 211, 238, ${opacity * 0.18})`;
+        ctx.lineWidth = 0.7;
         ctx.moveTo(particles[a].x, particles[a].y);
         ctx.lineTo(particles[b].x, particles[b].y);
         ctx.stroke();
@@ -76,10 +82,10 @@ function animateBackground() {
   // Soft radial glow in center
   const gradient = ctx.createRadialGradient(
     canvas.width / 2, canvas.height / 2, 0,
-    canvas.width / 2, canvas.height / 2, canvas.width * 0.6
+    canvas.width / 2, canvas.height / 2, canvas.width * 0.7
   );
-  gradient.addColorStop(0, 'rgba(8, 145, 178, 0.04)');
-  gradient.addColorStop(0.5, 'rgba(124, 58, 237, 0.02)');
+  gradient.addColorStop(0, 'rgba(8, 145, 178, 0.06)');
+  gradient.addColorStop(0.4, 'rgba(124, 58, 237, 0.03)');
   gradient.addColorStop(1, 'transparent');
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
