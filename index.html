@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RacleAlbum - Your Personal Photo Space</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261015-2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,8 +23,10 @@
   <section id="auth" class="section active">
     <div class="auth-container">
       <div class="auth-card">
+        <div class="auth-system-status"><span class="status-light"></span> SYSTEM ONLINE <span class="status-divider">/</span> PRIVATE ALBUM</div>
         <h1>RacleAlbum</h1>
-        <p class="subtitle">Secure Photo & Data Interface // Access Anywhere</p>
+        <p class="auth-kicker">YOUR MEMORIES. YOUR UNIVERSE.</p>
+        <p class="subtitle">A personal photo space built for your world.</p>
         <div class="tabs">
           <button class="tab active" onclick="switchTab('login')">Login</button>
           <button class="tab" onclick="switchTab('register')">Register</button>
@@ -135,6 +137,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=20261015-2"></script>
 </body>
 </html>
