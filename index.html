@@ -10,10 +10,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Live Sci-Fi Background -->
   <canvas id="bgCanvas"></canvas>
 
-  <!-- Navigation -->
   <nav class="navbar">
     <div class="nav-brand" onclick="showSection(currentUser ? 'gallery' : 'auth')">RacleAlbum</div>
     <div class="nav-links" id="navLinks">
@@ -22,18 +20,16 @@
     </div>
   </nav>
 
-  <!-- Landing / Auth Section -->
+  <!-- Auth -->
   <section id="auth" class="section active">
     <div class="auth-container">
       <div class="auth-card">
         <h1>RacleAlbum</h1>
         <p class="subtitle">Secure Photo & Data Interface // Access Anywhere</p>
-
         <div class="tabs">
           <button class="tab active" onclick="switchTab('login')">Login</button>
           <button class="tab" onclick="switchTab('register')">Register</button>
         </div>
-
         <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label>Identity // Email</label>
@@ -45,7 +41,6 @@
           </div>
           <button type="submit" class="btn primary full">Initialize Session</button>
         </form>
-
         <form id="registerForm" class="auth-form hidden" onsubmit="handleRegister(event)">
           <div class="form-group">
             <label>Codename // Name</label>
@@ -61,50 +56,72 @@
           </div>
           <button type="submit" class="btn primary full">Create Identity</button>
         </form>
-
         <p class="note">Encrypted • Private • Free Tier</p>
       </div>
     </div>
   </section>
 
-  <!-- Pinterest-style Gallery (logged in) -->
+  <!-- Gallery -->
   <section id="gallery" class="section">
     <div class="pin-header">
       <h1 class="pin-title">Racle Album</h1>
       <p class="pin-subtitle" id="pinSubtitle">Your personal board</p>
+      <p class="pin-count" id="pinCount"></p>
     </div>
 
-    <div id="galleryGrid" class="pin-grid">
-      <!-- Pins + empty upload slots rendered by JS -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input type="search" id="searchInput" placeholder="Search your album..." oninput="renderGallery()">
+      </div>
+      <select id="sortSelect" onchange="renderGallery()">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="title">Title A–Z</option>
+      </select>
+      <button class="btn primary toolbar-btn" onclick="triggerQuickUpload()">+ Upload</button>
     </div>
 
-    <!-- Hidden file input for quick upload from empty slots -->
-    <input type="file" id="quickPhoto" accept="image/*" style="display:none" onchange="quickUpload(event)">
+    <div id="galleryGrid" class="pin-grid"></div>
+    <input type="file" id="quickPhoto" accept="image/*" multiple style="display:none" onchange="quickUpload(event)">
   </section>
 
-  <!-- Upload modal / section (kept simple) -->
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox hidden" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox()">×</button>
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+      <img id="lightboxImg" src="" alt="">
+      <div class="lightbox-info">
+        <h2 id="lightboxTitle"></h2>
+        <p id="lightboxText"></p>
+        <p id="lightboxDate" class="lightbox-date"></p>
+        <div class="lightbox-actions">
+          <button class="btn" onclick="downloadCurrentPin()">Download</button>
+          <button class="btn danger" onclick="deleteCurrentPin()">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload form section -->
   <section id="upload" class="section">
     <div class="container">
       <div class="section-header">
         <h2>Add to Racle Album</h2>
         <button class="btn" onclick="showSection('gallery')">← Back</button>
       </div>
-
       <div class="upload-card">
         <form id="uploadForm" onsubmit="handleUpload(event)">
           <div class="form-group">
             <label>Title / Caption</label>
             <input type="text" id="itemTitle" placeholder="Give it a title..." required>
           </div>
-
           <div class="form-group">
             <label>Note (optional)</label>
             <textarea id="itemText" rows="3" placeholder="Add a note..."></textarea>
           </div>
-
           <div class="form-group">
             <label>Photo</label>
-            <div class="file-drop" id="fileDrop">
+            <div class="file-drop">
               <input type="file" id="itemPhoto" accept="image/*" onchange="previewPhoto(event)">
               <div class="drop-content">
                 <span>📷</span>
@@ -113,7 +130,6 @@
             </div>
             <img id="photoPreview" class="photo-preview hidden" alt="Preview">
           </div>
-
           <button type="submit" class="btn primary full">Save to Album</button>
         </form>
       </div>
