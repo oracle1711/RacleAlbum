@@ -92,6 +92,7 @@
         <p id="lightboxText"></p>
         <p id="lightboxDate" class="lightbox-date"></p>
         <div class="lightbox-actions">
+          <button class="btn" onclick="editCurrentPin()">Edit details</button>
           <button class="btn" onclick="downloadCurrentPin()">Download</button>
           <button class="btn danger" onclick="deleteCurrentPin()">Delete</button>
         </div>
@@ -121,7 +122,7 @@
               <input type="file" id="itemPhoto" accept="image/*" onchange="previewPhoto(event)">
               <div class="drop-content">
                 <span>📷</span>
-                <p>Click or drag a photo here</p>
+                <p>Click to choose a photo · Max 10 MB</p>
               </div>
             </div>
             <img id="photoPreview" class="photo-preview hidden" alt="Preview">
