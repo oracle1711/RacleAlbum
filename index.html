@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RacleAlbum - Your Personal Photo & Text Space</title>
+  <title>RacleAlbum - Your Personal Photo Space</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,10 +15,9 @@
 
   <!-- Navigation -->
   <nav class="navbar">
-    <div class="nav-brand">RacleAlbum</div>
+    <div class="nav-brand" onclick="showSection(currentUser ? 'gallery' : 'auth')">RacleAlbum</div>
     <div class="nav-links" id="navLinks">
-      <button class="nav-btn" onclick="showSection('gallery')">Gallery</button>
-      <button class="nav-btn" onclick="showSection('upload')">Upload</button>
+      <button class="nav-btn" id="galleryNavBtn" onclick="showSection('gallery')" style="display:none">Home</button>
       <button class="nav-btn primary" id="authBtn" onclick="showSection('auth')">Login</button>
     </div>
   </nav>
@@ -35,7 +34,6 @@
           <button class="tab" onclick="switchTab('register')">Register</button>
         </div>
 
-        <!-- Login Form -->
         <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label>Identity // Email</label>
@@ -48,7 +46,6 @@
           <button type="submit" class="btn primary full">Initialize Session</button>
         </form>
 
-        <!-- Register Form -->
         <form id="registerForm" class="auth-form hidden" onsubmit="handleRegister(event)">
           <div class="form-group">
             <label>Codename // Name</label>
@@ -70,45 +67,43 @@
     </div>
   </section>
 
-  <!-- Gallery Section -->
+  <!-- Pinterest-style Gallery (logged in) -->
   <section id="gallery" class="section">
-    <div class="container">
-      <div class="section-header">
-        <h2>Your Gallery</h2>
-        <button class="btn" onclick="showSection('upload')">+ Add New</button>
-      </div>
-      <div id="galleryGrid" class="gallery-grid">
-        <!-- Items will be loaded here -->
-        <div class="empty-state">
-          <p>No photos or notes yet.</p>
-          <button class="btn primary" onclick="showSection('upload')">Upload your first item</button>
-        </div>
-      </div>
+    <div class="pin-header">
+      <h1 class="pin-title">Racle Album</h1>
+      <p class="pin-subtitle" id="pinSubtitle">Your personal board</p>
     </div>
+
+    <div id="galleryGrid" class="pin-grid">
+      <!-- Pins + empty upload slots rendered by JS -->
+    </div>
+
+    <!-- Hidden file input for quick upload from empty slots -->
+    <input type="file" id="quickPhoto" accept="image/*" style="display:none" onchange="quickUpload(event)">
   </section>
 
-  <!-- Upload Section -->
+  <!-- Upload modal / section (kept simple) -->
   <section id="upload" class="section">
     <div class="container">
       <div class="section-header">
-        <h2>Upload</h2>
-        <button class="btn" onclick="showSection('gallery')">← Back to Gallery</button>
+        <h2>Add to Racle Album</h2>
+        <button class="btn" onclick="showSection('gallery')">← Back</button>
       </div>
 
       <div class="upload-card">
         <form id="uploadForm" onsubmit="handleUpload(event)">
           <div class="form-group">
             <label>Title / Caption</label>
-            <input type="text" id="itemTitle" placeholder="What is this about?" required>
+            <input type="text" id="itemTitle" placeholder="Give it a title..." required>
           </div>
 
           <div class="form-group">
-            <label>Text / Note (optional)</label>
-            <textarea id="itemText" rows="4" placeholder="Write something..."></textarea>
+            <label>Note (optional)</label>
+            <textarea id="itemText" rows="3" placeholder="Add a note..."></textarea>
           </div>
 
           <div class="form-group">
-            <label>Photo (optional)</label>
+            <label>Photo</label>
             <div class="file-drop" id="fileDrop">
               <input type="file" id="itemPhoto" accept="image/*" onchange="previewPhoto(event)">
               <div class="drop-content">
