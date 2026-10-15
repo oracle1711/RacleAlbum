@@ -42,7 +42,7 @@ class Particle {
 
 function initParticles() {
   particles = [];
-  const count = Math.floor((canvas.width * canvas.height) / 5500);
+  const count = Math.min(90, Math.floor((canvas.width * canvas.height) / 9000));
   for (let i = 0; i < count; i++) particles.push(new Particle());
 }
 
@@ -51,8 +51,9 @@ function connectParticles() {
     for (let b = a + 1; b < particles.length; b++) {
       const dx = particles[a].x - particles[b].x;
       const dy = particles[a].y - particles[b].y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 130) {
+      const distSq = dx * dx + dy * dy;
+      if (distSq < 130 * 130) {
+        const dist = Math.sqrt(distSq);
         ctx.beginPath();
         ctx.strokeStyle = `rgba(34, 211, 238, ${(1 - dist / 130) * 0.18})`;
         ctx.lineWidth = 0.7;
@@ -278,6 +279,7 @@ async function loadPinsFromCloud() {
   const { data, error } = await supabase
     .from('pins')
     .select('*')
+    .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -348,13 +350,14 @@ async function deletePinCloud(id) {
       }
     } catch (_) {}
   }
-  const { error } = await supabase.from('pins').delete().eq('id', id);
+  const { error } = await supabase.from('pins').delete().eq('id', id).eq('user_id', currentUser.id);
   if (error) throw error;
 }
 
 // ===== UPLOAD HANDLERS =====
 function previewPhoto(e) {
   const file = e.target.files[0];
+  if (file && !validateImage(file)) { e.target.value = ''; return; }
   const preview = document.getElementById('photoPreview');
   if (file) {
     const reader = new FileReader();
@@ -379,6 +382,9 @@ async function handleUpload(e) {
   const text = document.getElementById('itemText').value.trim();
   const photoInput = document.getElementById('itemPhoto');
   const file = photoInput.files[0] || document.getElementById('photoPreview')._file;
+  if (file && !validateImage(file)) return;
+  const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving to album…'; }
 
   try {
     if (cloudEnabled && supabase) {
@@ -405,7 +411,21 @@ async function handleUpload(e) {
     renderGallery();
   } catch (err) {
     alert(err.message || 'Upload failed');
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save to Album'; }
   }
+}
+
+function validateImage(file) {
+  if (!file.type || !file.type.startsWith('image/')) {
+    alert('Please choose an image file.');
+    return false;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    alert('Please choose an image smaller than 10 MB.');
+    return false;
+  }
+  return true;
 }
 
 function triggerQuickUpload() {
@@ -415,10 +435,15 @@ function triggerQuickUpload() {
 async function quickUpload(e) {
   const files = Array.from(e.target.files || []);
   if (!files.length || !currentUser) return;
+  if (files.some(file => !validateImage(file))) { e.target.value = ''; return; }
+  const uploadBtn = document.querySelector('.toolbar-btn');
+  const originalLabel = uploadBtn?.textContent;
+  if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.textContent = `Uploading 0/${files.length}…`; }
 
   try {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      if (uploadBtn) uploadBtn.textContent = `Uploading ${i + 1}/${files.length}…`;
       const title = file.name.replace(/\.[^/.]+$/, '') || 'Untitled';
       if (cloudEnabled && supabase) {
         const pin = await addPinCloud({ title, text: '', file });
@@ -448,8 +473,10 @@ async function quickUpload(e) {
     renderGallery();
   } catch (err) {
     alert(err.message || 'Upload failed');
+  } finally {
+    if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.textContent = originalLabel || '+ Upload'; }
+    e.target.value = '';
   }
-  e.target.value = '';
 }
 
 async function deletePin(id, event) {
@@ -492,6 +519,37 @@ function closeLightbox(e) {
 function deleteCurrentPin() {
   if (currentLightboxId == null) return;
   deletePin(currentLightboxId);
+}
+
+async function editCurrentPin() {
+  const item = items.find(i => i.id === currentLightboxId);
+  if (!item) return;
+  const title = prompt('Edit photo title:', item.title || '');
+  if (title === null) return;
+  const note = prompt('Edit note:', item.text || '');
+  if (note === null) return;
+  const cleanTitle = title.trim() || 'Untitled';
+  const cleanNote = note.trim();
+
+  try {
+    if (cloudEnabled && supabase) {
+      const { error } = await supabase.from('pins')
+        .update({ title: cleanTitle, note: cleanNote })
+        .eq('id', item.id)
+        .eq('user_id', currentUser.id);
+      if (error) throw error;
+    }
+    item.title = cleanTitle;
+    item.text = cleanNote;
+    if (!cloudEnabled && currentUser) {
+      localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
+    }
+    document.getElementById('lightboxTitle').textContent = item.title;
+    document.getElementById('lightboxText').textContent = item.text;
+    renderGallery();
+  } catch (err) {
+    alert(err.message || 'Could not update photo details');
+  }
 }
 
 function downloadCurrentPin() {
