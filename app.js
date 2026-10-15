@@ -1,4 +1,4 @@
-// ===== LIVE SCI-FI BACKGROUND =====
+// ===== LIVE BACKGROUND =====
 const canvas = document.getElementById('bgCanvas');
 const ctx = canvas.getContext('2d');
 let particles = [];
@@ -20,7 +20,6 @@ class Particle {
       ? `rgba(167, 139, 250, ${this.opacity})`
       : `rgba(34, 211, 238, ${this.opacity})`;
   }
-
   update() {
     this.x += this.speedX;
     this.y += this.speedY;
@@ -29,7 +28,6 @@ class Particle {
     if (this.y < 0) this.y = canvas.height;
     if (this.y > canvas.height) this.y = 0;
   }
-
   draw() {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -55,9 +53,8 @@ function connectParticles() {
       const dy = particles[a].y - particles[b].y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < 130) {
-        const opacity = 1 - dist / 130;
         ctx.beginPath();
-        ctx.strokeStyle = `rgba(34, 211, 238, ${opacity * 0.18})`;
+        ctx.strokeStyle = `rgba(34, 211, 238, ${(1 - dist / 130) * 0.18})`;
         ctx.lineWidth = 0.7;
         ctx.moveTo(particles[a].x, particles[a].y);
         ctx.lineTo(particles[b].x, particles[b].y);
@@ -69,14 +66,11 @@ function connectParticles() {
 
 function animateBackground() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  const gradient = ctx.createRadialGradient(
-    canvas.width / 2, canvas.height / 2, 0,
-    canvas.width / 2, canvas.height / 2, canvas.width * 0.7
-  );
-  gradient.addColorStop(0, 'rgba(8, 145, 178, 0.06)');
-  gradient.addColorStop(0.4, 'rgba(124, 58, 237, 0.03)');
-  gradient.addColorStop(1, 'transparent');
-  ctx.fillStyle = gradient;
+  const g = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width * 0.7);
+  g.addColorStop(0, 'rgba(8, 145, 178, 0.06)');
+  g.addColorStop(0.4, 'rgba(124, 58, 237, 0.03)');
+  g.addColorStop(1, 'transparent');
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   particles.forEach(p => { p.update(); p.draw(); });
   connectParticles();
@@ -88,9 +82,10 @@ resizeCanvas();
 initParticles();
 animateBackground();
 
-// ===== APP LOGIC =====
+// ===== APP =====
 let currentUser = null;
 let items = [];
+let currentLightboxId = null;
 
 function init() {
   const savedUser = localStorage.getItem('racle_user');
@@ -124,7 +119,6 @@ function handleLogin(e) {
   const password = document.getElementById('loginPassword').value;
   const users = JSON.parse(localStorage.getItem('racle_users') || '[]');
   const user = users.find(u => u.email === email && u.password === password);
-
   if (user) {
     currentUser = { name: user.name, email: user.email };
     localStorage.setItem('racle_user', JSON.stringify(currentUser));
@@ -143,13 +137,11 @@ function handleRegister(e) {
   const email = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPassword').value;
   let users = JSON.parse(localStorage.getItem('racle_users') || '[]');
-
   if (users.find(u => u.email === email)) {
     alert('Email already registered. Please login.');
     switchTab('login');
     return;
   }
-
   users.push({ name, email, password });
   localStorage.setItem('racle_users', JSON.stringify(users));
   currentUser = { name, email };
@@ -175,11 +167,19 @@ function logout() {
   localStorage.removeItem('racle_user');
   currentUser = null;
   items = [];
+  currentLightboxId = null;
   document.getElementById('authBtn').textContent = 'Login';
   document.getElementById('authBtn').onclick = () => showSection('auth');
   const galleryNav = document.getElementById('galleryNavBtn');
   if (galleryNav) galleryNav.style.display = 'none';
+  closeLightbox();
   showSection('auth');
+}
+
+function saveItems() {
+  if (currentUser) {
+    localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
+  }
 }
 
 function previewPhoto(e) {
@@ -199,27 +199,19 @@ function previewPhoto(e) {
 
 function handleUpload(e) {
   e.preventDefault();
-  if (!currentUser) {
-    alert('Please login first');
-    showSection('auth');
-    return;
-  }
-
+  if (!currentUser) { showSection('auth'); return; }
   const title = document.getElementById('itemTitle').value.trim();
   const text = document.getElementById('itemText').value.trim();
   const preview = document.getElementById('photoPreview');
-
-  const newItem = {
+  items.unshift({
     id: Date.now(),
     title,
     text,
     photo: preview.classList.contains('hidden') ? null : preview.src,
-    date: new Date().toLocaleString()
-  };
-
-  items.unshift(newItem);
-  localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
-
+    date: new Date().toLocaleString(),
+    ts: Date.now()
+  });
+  saveItems();
   document.getElementById('uploadForm').reset();
   preview.classList.add('hidden');
   preview.src = '';
@@ -227,43 +219,111 @@ function handleUpload(e) {
   renderGallery();
 }
 
-// Quick upload from empty pin slots
 function triggerQuickUpload() {
   document.getElementById('quickPhoto').click();
 }
 
 function quickUpload(e) {
-  const file = e.target.files[0];
-  if (!file || !currentUser) return;
-
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const newItem = {
-      id: Date.now(),
-      title: file.name.replace(/\.[^/.]+$/, '') || 'Untitled',
-      text: '',
-      photo: ev.target.result,
-      date: new Date().toLocaleString()
+  const files = Array.from(e.target.files || []);
+  if (!files.length || !currentUser) return;
+  let loaded = 0;
+  files.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      items.unshift({
+        id: Date.now() + index,
+        title: file.name.replace(/\.[^/.]+$/, '') || 'Untitled',
+        text: '',
+        photo: ev.target.result,
+        date: new Date().toLocaleString(),
+        ts: Date.now() + index
+      });
+      loaded++;
+      if (loaded === files.length) {
+        saveItems();
+        renderGallery();
+      }
     };
-    items.unshift(newItem);
-    localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
-    renderGallery();
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  });
   e.target.value = '';
+}
+
+function deletePin(id, event) {
+  if (event) event.stopPropagation();
+  if (!confirm('Delete this pin from Racle Album?')) return;
+  items = items.filter(i => i.id !== id);
+  saveItems();
+  if (currentLightboxId === id) closeLightbox();
+  renderGallery();
+}
+
+function openLightbox(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  currentLightboxId = id;
+  document.getElementById('lightboxImg').src = item.photo || '';
+  document.getElementById('lightboxImg').style.display = item.photo ? 'block' : 'none';
+  document.getElementById('lightboxTitle').textContent = item.title || 'Untitled';
+  document.getElementById('lightboxText').textContent = item.text || '';
+  document.getElementById('lightboxDate').textContent = item.date || '';
+  document.getElementById('lightbox').classList.remove('hidden');
+}
+
+function closeLightbox(e) {
+  if (e && e.target !== e.currentTarget && !e.target.classList.contains('lightbox-close')) return;
+  document.getElementById('lightbox').classList.add('hidden');
+  currentLightboxId = null;
+}
+
+function deleteCurrentPin() {
+  if (currentLightboxId == null) return;
+  deletePin(currentLightboxId);
+}
+
+function downloadCurrentPin() {
+  const item = items.find(i => i.id === currentLightboxId);
+  if (!item || !item.photo) {
+    alert('No image to download');
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = item.photo;
+  a.download = (item.title || 'racle-album') + '.png';
+  a.click();
+}
+
+function getFilteredSortedItems() {
+  const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+  const sort = document.getElementById('sortSelect')?.value || 'newest';
+  let list = [...items];
+  if (q) {
+    list = list.filter(i =>
+      (i.title || '').toLowerCase().includes(q) ||
+      (i.text || '').toLowerCase().includes(q)
+    );
+  }
+  if (sort === 'oldest') list.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  else if (sort === 'title') list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  else list.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  return list;
 }
 
 function renderGallery() {
   const grid = document.getElementById('galleryGrid');
   if (!grid) return;
 
+  const list = getFilteredSortedItems();
+  const countEl = document.getElementById('pinCount');
+  if (countEl) {
+    countEl.textContent = items.length === 0
+      ? 'No pins yet — upload your first image'
+      : `${items.length} pin${items.length === 1 ? '' : 's'}${list.length !== items.length ? ` · showing ${list.length}` : ''}`;
+  }
+
   let html = '';
-
-  // Always show a few empty upload slots (Pinterest empty spaces)
   const emptySizes = ['tall', 'medium', 'short', 'medium', 'tall', 'short'];
-  const emptyCount = items.length === 0 ? 6 : Math.max(2, 4 - Math.min(items.length, 3));
 
-  // Mix: first empty slot, then items, intersperse more empties
   html += `
     <div class="pin-empty ${emptySizes[0]}" onclick="triggerQuickUpload()">
       <div class="plus">+</div>
@@ -271,19 +331,19 @@ function renderGallery() {
     </div>
   `;
 
-  items.forEach((item, i) => {
+  list.forEach((item, i) => {
     html += `
-      <div class="pin-card">
+      <div class="pin-card" onclick="openLightbox(${item.id})">
+        <button class="pin-delete" title="Delete" onclick="deletePin(${item.id}, event)">×</button>
         ${item.photo ? `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">` : ''}
         <div class="pin-card-body">
           <h3>${escapeHtml(item.title)}</h3>
           ${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}
-          <div class="pin-card-date">${item.date}</div>
+          <div class="pin-card-date">${item.date || ''}</div>
         </div>
       </div>
     `;
-    // Add an empty slot every few items for the "empty spaces" feel
-    if ((i + 1) % 3 === 0 && i < items.length - 1) {
+    if ((i + 1) % 4 === 0) {
       const size = emptySizes[(i + 1) % emptySizes.length];
       html += `
         <div class="pin-empty ${size}" onclick="triggerQuickUpload()">
@@ -294,15 +354,15 @@ function renderGallery() {
     }
   });
 
-  // Extra empty slots when album is sparse
-  for (let i = 1; i < emptyCount; i++) {
-    const size = emptySizes[i % emptySizes.length];
-    html += `
-      <div class="pin-empty ${size}" onclick="triggerQuickUpload()">
-        <div class="plus">+</div>
-        <span class="label">Upload image</span>
-      </div>
-    `;
+  if (list.length < 4) {
+    for (let i = 1; i < 4; i++) {
+      html += `
+        <div class="pin-empty ${emptySizes[i]}" onclick="triggerQuickUpload()">
+          <div class="plus">+</div>
+          <span class="label">Upload image</span>
+        </div>
+      `;
+    }
   }
 
   grid.innerHTML = html;
@@ -313,5 +373,9 @@ function escapeHtml(text) {
   div.textContent = text || '';
   return div.innerHTML;
 }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeLightbox();
+});
 
 init();
