@@ -20,7 +20,6 @@
     </div>
   </nav>
 
-  <!-- Auth -->
   <section id="auth" class="section active">
     <div class="auth-container">
       <div class="auth-card">
@@ -39,7 +38,7 @@
             <label>Access Key // Password</label>
             <input type="password" id="loginPassword" placeholder="••••••••" required>
           </div>
-          <button type="submit" class="btn primary full">Initialize Session</button>
+          <button type="submit" class="btn primary full" id="loginBtn">Initialize Session</button>
         </form>
         <form id="registerForm" class="auth-form hidden" onsubmit="handleRegister(event)">
           <div class="form-group">
@@ -54,14 +53,13 @@
             <label>Access Key // Password</label>
             <input type="password" id="regPassword" placeholder="Minimum 6 characters" required minlength="6">
           </div>
-          <button type="submit" class="btn primary full">Create Identity</button>
+          <button type="submit" class="btn primary full" id="registerBtn">Create Identity</button>
         </form>
-        <p class="note">Encrypted • Private • Free Tier</p>
+        <p class="note" id="cloudStatus">Cloud • Private • Free Tier</p>
       </div>
     </div>
   </section>
 
-  <!-- Gallery -->
   <section id="gallery" class="section">
     <div class="pin-header">
       <h1 class="pin-title">Racle Album</h1>
@@ -85,7 +83,6 @@
     <input type="file" id="quickPhoto" accept="image/*" multiple style="display:none" onchange="quickUpload(event)">
   </section>
 
-  <!-- Lightbox -->
   <div id="lightbox" class="lightbox hidden" onclick="closeLightbox(event)">
     <button class="lightbox-close" onclick="closeLightbox()">×</button>
     <div class="lightbox-content" onclick="event.stopPropagation()">
@@ -102,7 +99,6 @@
     </div>
   </div>
 
-  <!-- Upload form section -->
   <section id="upload" class="section">
     <div class="container">
       <div class="section-header">
@@ -136,6 +132,8 @@
     </div>
   </section>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
