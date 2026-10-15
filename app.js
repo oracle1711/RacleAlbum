@@ -82,21 +82,66 @@ resizeCanvas();
 initParticles();
 animateBackground();
 
-// ===== APP =====
+// ===== CLOUD / LOCAL MODE =====
+const cloudEnabled =
+  typeof SUPABASE_URL === 'string' &&
+  typeof SUPABASE_ANON_KEY === 'string' &&
+  !SUPABASE_URL.includes('PASTE_') &&
+  !SUPABASE_ANON_KEY.includes('PASTE_') &&
+  SUPABASE_URL.startsWith('http');
+
+let supabase = null;
+if (cloudEnabled && window.supabase) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
 let currentUser = null;
 let items = [];
 let currentLightboxId = null;
 
-function init() {
-  const savedUser = localStorage.getItem('racle_user');
-  if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-    items = JSON.parse(localStorage.getItem(`racle_items_${currentUser.email}`) || '[]');
-    updateUIForLoggedIn();
-    showSection('gallery');
-    renderGallery();
+function setCloudStatus(msg) {
+  const el = document.getElementById('cloudStatus');
+  if (el) el.textContent = msg;
+}
+
+async function init() {
+  if (cloudEnabled && supabase) {
+    setCloudStatus('Cloud connected • Private • Free Tier');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      currentUser = {
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.user_metadata?.name || session.user.email.split('@')[0]
+      };
+      updateUIForLoggedIn();
+      await loadPinsFromCloud();
+      showSection('gallery');
+      renderGallery();
+    } else {
+      showSection('auth');
+    }
+
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT') {
+        currentUser = null;
+        items = [];
+        showSection('auth');
+      }
+    });
   } else {
-    showSection('auth');
+    setCloudStatus('Local mode • Add keys in config.js for cloud');
+    // Fallback localStorage
+    const savedUser = localStorage.getItem('racle_user');
+    if (savedUser) {
+      currentUser = JSON.parse(savedUser);
+      items = JSON.parse(localStorage.getItem(`racle_items_${currentUser.email}`) || '[]');
+      updateUIForLoggedIn();
+      showSection('gallery');
+      renderGallery();
+    } else {
+      showSection('auth');
+    }
   }
 }
 
@@ -113,57 +158,108 @@ function switchTab(tab) {
   document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
-  const users = JSON.parse(localStorage.getItem('racle_users') || '[]');
-  const user = users.find(u => u.email === email && u.password === password);
-  if (user) {
-    currentUser = { name: user.name, email: user.email };
-    localStorage.setItem('racle_user', JSON.stringify(currentUser));
-    items = JSON.parse(localStorage.getItem(`racle_items_${email}`) || '[]');
-    updateUIForLoggedIn();
-    showSection('gallery');
-    renderGallery();
-  } else {
-    alert('Invalid email or password');
+  const btn = document.getElementById('loginBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Connecting...'; }
+
+  try {
+    if (cloudEnabled && supabase) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      currentUser = {
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.user_metadata?.name || email.split('@')[0]
+      };
+      updateUIForLoggedIn();
+      await loadPinsFromCloud();
+      showSection('gallery');
+      renderGallery();
+    } else {
+      const users = JSON.parse(localStorage.getItem('racle_users') || '[]');
+      const user = users.find(u => u.email === email && u.password === password);
+      if (!user) throw new Error('Invalid email or password');
+      currentUser = { name: user.name, email: user.email };
+      localStorage.setItem('racle_user', JSON.stringify(currentUser));
+      items = JSON.parse(localStorage.getItem(`racle_items_${email}`) || '[]');
+      updateUIForLoggedIn();
+      showSection('gallery');
+      renderGallery();
+    }
+  } catch (err) {
+    alert(err.message || 'Login failed');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Initialize Session'; }
   }
 }
 
-function handleRegister(e) {
+async function handleRegister(e) {
   e.preventDefault();
   const name = document.getElementById('regName').value.trim();
   const email = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPassword').value;
-  let users = JSON.parse(localStorage.getItem('racle_users') || '[]');
-  if (users.find(u => u.email === email)) {
-    alert('Email already registered. Please login.');
-    switchTab('login');
-    return;
+  const btn = document.getElementById('registerBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
+
+  try {
+    if (cloudEnabled && supabase) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name } }
+      });
+      if (error) throw error;
+      if (!data.user) throw new Error('Registration failed');
+      currentUser = { id: data.user.id, email, name };
+      // If email confirmation is required, session may be null
+      if (!data.session) {
+        alert('Account created! Check your email to confirm, then login.');
+        switchTab('login');
+        return;
+      }
+      updateUIForLoggedIn();
+      items = [];
+      showSection('gallery');
+      renderGallery();
+    } else {
+      let users = JSON.parse(localStorage.getItem('racle_users') || '[]');
+      if (users.find(u => u.email === email)) {
+        throw new Error('Email already registered. Please login.');
+      }
+      users.push({ name, email, password });
+      localStorage.setItem('racle_users', JSON.stringify(users));
+      currentUser = { name, email };
+      localStorage.setItem('racle_user', JSON.stringify(currentUser));
+      items = [];
+      localStorage.setItem(`racle_items_${email}`, JSON.stringify(items));
+      updateUIForLoggedIn();
+      showSection('gallery');
+      renderGallery();
+    }
+  } catch (err) {
+    alert(err.message || 'Registration failed');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Identity'; }
   }
-  users.push({ name, email, password });
-  localStorage.setItem('racle_users', JSON.stringify(users));
-  currentUser = { name, email };
-  localStorage.setItem('racle_user', JSON.stringify(currentUser));
-  items = [];
-  localStorage.setItem(`racle_items_${email}`, JSON.stringify(items));
-  updateUIForLoggedIn();
-  showSection('gallery');
-  renderGallery();
 }
 
 function updateUIForLoggedIn() {
   const authBtn = document.getElementById('authBtn');
   const galleryNav = document.getElementById('galleryNavBtn');
-  authBtn.textContent = currentUser.name.split(' ')[0] || 'Logout';
+  authBtn.textContent = (currentUser.name || currentUser.email || 'User').split(' ')[0];
   authBtn.onclick = logout;
   if (galleryNav) galleryNav.style.display = 'inline-block';
   const sub = document.getElementById('pinSubtitle');
-  if (sub) sub.textContent = `${currentUser.name}'s board`;
+  if (sub) sub.textContent = `${currentUser.name || 'Your'}'s board`;
 }
 
-function logout() {
+async function logout() {
+  if (cloudEnabled && supabase) {
+    await supabase.auth.signOut();
+  }
   localStorage.removeItem('racle_user');
   currentUser = null;
   items = [];
@@ -176,12 +272,87 @@ function logout() {
   showSection('auth');
 }
 
-function saveItems() {
-  if (currentUser) {
-    localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
+// ===== CLOUD PINS =====
+async function loadPinsFromCloud() {
+  if (!supabase || !currentUser) return;
+  const { data, error } = await supabase
+    .from('pins')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(error);
+    alert('Could not load album: ' + error.message);
+    items = [];
+    return;
   }
+
+  items = (data || []).map(row => ({
+    id: row.id,
+    title: row.title || 'Untitled',
+    text: row.note || '',
+    photo: row.image_url,
+    date: row.created_at ? new Date(row.created_at).toLocaleString() : '',
+    ts: row.created_at ? new Date(row.created_at).getTime() : 0,
+    storagePath: row.image_url || null
+  }));
 }
 
+async function uploadImageToCloud(file) {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from('album-images').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from('album-images').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function addPinCloud({ title, text, file }) {
+  let imageUrl = null;
+  if (file) imageUrl = await uploadImageToCloud(file);
+
+  const { data, error } = await supabase
+    .from('pins')
+    .insert({
+      user_id: currentUser.id,
+      title: title || 'Untitled',
+      note: text || '',
+      image_url: imageUrl
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return {
+    id: data.id,
+    title: data.title,
+    text: data.note || '',
+    photo: data.image_url,
+    date: new Date(data.created_at).toLocaleString(),
+    ts: new Date(data.created_at).getTime()
+  };
+}
+
+async function deletePinCloud(id) {
+  const item = items.find(i => i.id === id);
+  // Try remove file from storage if path is in our bucket
+  if (item?.photo && item.photo.includes('/album-images/')) {
+    try {
+      const parts = item.photo.split('/album-images/');
+      if (parts[1]) {
+        await supabase.storage.from('album-images').remove([parts[1]]);
+      }
+    } catch (_) {}
+  }
+  const { error } = await supabase.from('pins').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ===== UPLOAD HANDLERS =====
 function previewPhoto(e) {
   const file = e.target.files[0];
   const preview = document.getElementById('photoPreview');
@@ -190,72 +361,114 @@ function previewPhoto(e) {
     reader.onload = (ev) => {
       preview.src = ev.target.result;
       preview.classList.remove('hidden');
+      preview.dataset.fileName = file.name;
     };
     reader.readAsDataURL(file);
+    preview._file = file;
   } else {
     preview.classList.add('hidden');
+    preview._file = null;
   }
 }
 
-function handleUpload(e) {
+async function handleUpload(e) {
   e.preventDefault();
   if (!currentUser) { showSection('auth'); return; }
+
   const title = document.getElementById('itemTitle').value.trim();
   const text = document.getElementById('itemText').value.trim();
-  const preview = document.getElementById('photoPreview');
-  items.unshift({
-    id: Date.now(),
-    title,
-    text,
-    photo: preview.classList.contains('hidden') ? null : preview.src,
-    date: new Date().toLocaleString(),
-    ts: Date.now()
-  });
-  saveItems();
-  document.getElementById('uploadForm').reset();
-  preview.classList.add('hidden');
-  preview.src = '';
-  showSection('gallery');
-  renderGallery();
+  const photoInput = document.getElementById('itemPhoto');
+  const file = photoInput.files[0] || document.getElementById('photoPreview')._file;
+
+  try {
+    if (cloudEnabled && supabase) {
+      const pin = await addPinCloud({ title, text, file });
+      items.unshift(pin);
+    } else {
+      const preview = document.getElementById('photoPreview');
+      items.unshift({
+        id: Date.now(),
+        title,
+        text,
+        photo: preview.classList.contains('hidden') ? null : preview.src,
+        date: new Date().toLocaleString(),
+        ts: Date.now()
+      });
+      localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
+    }
+    document.getElementById('uploadForm').reset();
+    const preview = document.getElementById('photoPreview');
+    preview.classList.add('hidden');
+    preview.src = '';
+    preview._file = null;
+    showSection('gallery');
+    renderGallery();
+  } catch (err) {
+    alert(err.message || 'Upload failed');
+  }
 }
 
 function triggerQuickUpload() {
   document.getElementById('quickPhoto').click();
 }
 
-function quickUpload(e) {
+async function quickUpload(e) {
   const files = Array.from(e.target.files || []);
   if (!files.length || !currentUser) return;
-  let loaded = 0;
-  files.forEach((file, index) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      items.unshift({
-        id: Date.now() + index,
-        title: file.name.replace(/\.[^/.]+$/, '') || 'Untitled',
-        text: '',
-        photo: ev.target.result,
-        date: new Date().toLocaleString(),
-        ts: Date.now() + index
-      });
-      loaded++;
-      if (loaded === files.length) {
-        saveItems();
-        renderGallery();
+
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const title = file.name.replace(/\.[^/.]+$/, '') || 'Untitled';
+      if (cloudEnabled && supabase) {
+        const pin = await addPinCloud({ title, text: '', file });
+        items.unshift(pin);
+      } else {
+        await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            items.unshift({
+              id: Date.now() + i,
+              title,
+              text: '',
+              photo: ev.target.result,
+              date: new Date().toLocaleString(),
+              ts: Date.now() + i
+            });
+            resolve();
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
       }
-    };
-    reader.readAsDataURL(file);
-  });
+    }
+    if (!cloudEnabled) {
+      localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
+    }
+    renderGallery();
+  } catch (err) {
+    alert(err.message || 'Upload failed');
+  }
   e.target.value = '';
 }
 
-function deletePin(id, event) {
+async function deletePin(id, event) {
   if (event) event.stopPropagation();
   if (!confirm('Delete this pin from Racle Album?')) return;
-  items = items.filter(i => i.id !== id);
-  saveItems();
-  if (currentLightboxId === id) closeLightbox();
-  renderGallery();
+
+  try {
+    if (cloudEnabled && supabase) {
+      await deletePinCloud(id);
+    }
+    items = items.filter(i => i.id !== id);
+    if (!cloudEnabled && currentUser) {
+      localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
+    }
+    if (currentLightboxId === id) closeLightbox();
+    renderGallery();
+  } catch (err) {
+    alert(err.message || 'Delete failed');
+  }
 }
 
 function openLightbox(id) {
@@ -289,7 +502,8 @@ function downloadCurrentPin() {
   }
   const a = document.createElement('a');
   a.href = item.photo;
-  a.download = (item.title || 'racle-album') + '.png';
+  a.download = (item.title || 'racle-album') + '.jpg';
+  a.target = '_blank';
   a.click();
 }
 
@@ -332,9 +546,10 @@ function renderGallery() {
   `;
 
   list.forEach((item, i) => {
+    const idAttr = typeof item.id === 'string' ? `'${item.id}'` : item.id;
     html += `
-      <div class="pin-card" onclick="openLightbox(${item.id})">
-        <button class="pin-delete" title="Delete" onclick="deletePin(${item.id}, event)">×</button>
+      <div class="pin-card" onclick="openLightbox(${idAttr})">
+        <button class="pin-delete" title="Delete" onclick="deletePin(${idAttr}, event)">×</button>
         ${item.photo ? `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">` : ''}
         <div class="pin-card-body">
           <h3>${escapeHtml(item.title)}</h3>
