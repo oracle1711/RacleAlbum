@@ -27,9 +27,9 @@
         <h1>RacleAlbum</h1>
         <p class="auth-kicker">YOUR MEMORIES. YOUR UNIVERSE.</p>
         <p class="subtitle">A personal photo space built for your world.</p>
-        <div class="tabs">
-          <button class="tab active" onclick="switchTab('login')">Login</button>
-          <button class="tab" onclick="switchTab('register')">Register</button>
+        <div class="tabs" role="tablist" aria-label="Account access">
+          <button type="button" class="tab active" data-tab="login" role="tab" aria-selected="true" onclick="switchTab('login')">Login</button>
+          <button type="button" class="tab" data-tab="register" role="tab" aria-selected="false" onclick="switchTab('register')">Register</button>
         </div>
         <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
           <div class="form-group">
@@ -137,6 +137,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="app.js?v=20261015-3"></script>
+  <script src="app.js?v=20261016-1"></script>
 </body>
 </html>
