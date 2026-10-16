@@ -137,6 +137,45 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
-  <script src="app.js?v=20261016-1"></script>
+  <script src="app.js?v=20261016-2"></script>
+  <script>
+    // Independent fallback for the login/register tabs. This still works if app.js
+    // encounters a runtime error after the page has loaded.
+    (() => {
+      const bindAuthTabs = () => {
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const tabs = document.querySelectorAll('.tabs .tab');
+        if (!loginForm || !registerForm || !tabs.length) return;
+
+        const showTab = (tab) => {
+          const register = tab === 'register';
+          loginForm.classList.toggle('hidden', register);
+          registerForm.classList.toggle('hidden', !register);
+          tabs.forEach((button) => {
+            const isRegister = button.dataset.tab === 'register' ||
+              button.textContent.trim().toLowerCase() === 'register';
+            const active = isRegister === register;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-selected', String(active));
+          });
+        };
+
+        tabs.forEach((button) => {
+          button.addEventListener('click', (event) => {
+            event.preventDefault();
+            const tab = button.dataset.tab ||
+              (button.textContent.trim().toLowerCase() === 'register' ? 'register' : 'login');
+            showTab(tab);
+          });
+        });
+      };
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindAuthTabs, { once: true });
+      } else {
+        bindAuthTabs();
+      }
+    })();
+  </script>
 </body>
 </html>
