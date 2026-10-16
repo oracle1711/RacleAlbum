@@ -153,10 +153,26 @@ function showSection(id) {
 }
 
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
-  document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
-  document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
+  // Keep the auth tabs reliable even if their inline onclick attributes change.
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const tabs = document.querySelectorAll('.tabs .tab');
+
+  if (!loginForm || !registerForm) {
+    console.error('Racle Album: login/register form is missing from index.html.');
+    return;
+  }
+  if (tab !== 'login' && tab !== 'register') tab = 'login';
+
+  loginForm.classList.toggle('hidden', tab !== 'login');
+  registerForm.classList.toggle('hidden', tab !== 'register');
+
+  tabs.forEach(button => {
+    const buttonTab = button.dataset.tab ||
+      (button.textContent.trim().toLowerCase().includes('register') ? 'register' : 'login');
+    button.classList.toggle('active', buttonTab === tab);
+    button.setAttribute('aria-selected', String(buttonTab === tab));
+  });
 }
 
 async function handleLogin(e) {
