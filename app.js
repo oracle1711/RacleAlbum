@@ -91,7 +91,6 @@ const cloudEnabled =
   !SUPABASE_ANON_KEY.includes('PASTE_') &&
   SUPABASE_URL.startsWith('http');
 
-// IMPORTANT: do not name this variable "supabase" — the CDN already uses that global name
 let sbClient = null;
 if (cloudEnabled && window.supabase && typeof window.supabase.createClient === 'function') {
   sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -100,6 +99,7 @@ if (cloudEnabled && window.supabase && typeof window.supabase.createClient === '
 let currentUser = null;
 let items = [];
 let currentLightboxId = null;
+let searchTimer = null;
 
 function setCloudStatus(msg) {
   const el = document.getElementById('cloudStatus');
@@ -108,7 +108,7 @@ function setCloudStatus(msg) {
 
 async function init() {
   if (cloudEnabled && sbClient) {
-    setCloudStatus('Cloud connected • Private • Free Tier');
+    setCloudStatus('Cloud connected • Works on any device');
     const { data: { session } } = await sbClient.auth.getSession();
     if (session?.user) {
       currentUser = {
@@ -124,8 +124,7 @@ async function init() {
     } else {
       showSection('auth');
     }
-
-    sbClient.auth.onAuthStateChange(async (event, session) => {
+    sbClient.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_OUT') {
         currentUser = null;
         items = [];
@@ -133,7 +132,7 @@ async function init() {
       }
     });
   } else {
-    setCloudStatus('Local mode • Add keys in config.js for cloud');
+    setCloudStatus('Local mode • Add keys in config.js for multi-device');
     const savedUser = localStorage.getItem('racle_user');
     if (savedUser) {
       currentUser = JSON.parse(savedUser);
@@ -158,16 +157,10 @@ function switchTab(tab) {
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
   const tabs = document.querySelectorAll('.tabs .tab');
-
-  if (!loginForm || !registerForm) {
-    console.error('Racle Album: login/register form is missing from index.html.');
-    return;
-  }
+  if (!loginForm || !registerForm) return;
   if (tab !== 'login' && tab !== 'register') tab = 'login';
-
   loginForm.classList.toggle('hidden', tab !== 'login');
   registerForm.classList.toggle('hidden', tab !== 'register');
-
   tabs.forEach(button => {
     const buttonTab = button.dataset.tab ||
       (button.textContent.trim().toLowerCase().includes('register') ? 'register' : 'login');
@@ -182,7 +175,6 @@ async function handleLogin(e) {
   const password = document.getElementById('loginPassword').value;
   const btn = document.getElementById('loginBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Connecting...'; }
-
   try {
     if (cloudEnabled && sbClient) {
       const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
@@ -226,7 +218,6 @@ async function handleRegister(e) {
   const password = document.getElementById('regPassword').value;
   const btn = document.getElementById('registerBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
-
   if (!name || !email || !password) {
     alert('Please fill in name, email, and password.');
     if (btn) { btn.disabled = false; btn.textContent = 'Create Identity'; }
@@ -237,27 +228,21 @@ async function handleRegister(e) {
     if (btn) { btn.disabled = false; btn.textContent = 'Create Identity'; }
     return;
   }
-
   try {
     if (cloudEnabled && sbClient) {
       const { data, error } = await sbClient.auth.signUp({
-        email,
-        password,
-        options: { data: { name } }
+        email, password, options: { data: { name } }
       });
       if (error) throw error;
       if (!data.user) throw new Error('Registration failed. Please try again.');
-
       currentUser = { id: data.user.id, email, name };
-
       if (!data.session) {
         localStorage.setItem('racle_pending_email', email);
-        alert('Account created and saved!\n\nCheck your email to confirm, then log in.\n\n(Tip: In Supabase → Authentication → Providers → Email, you can turn off "Confirm email" for instant login.)');
+        alert('Account created! Check your email to confirm, then log in from any device.');
         switchTab('login');
         document.getElementById('loginEmail').value = email;
         return;
       }
-
       localStorage.removeItem('racle_pending_email');
       updateUIForLoggedIn();
       items = [];
@@ -265,9 +250,7 @@ async function handleRegister(e) {
       renderGallery();
     } else {
       let users = JSON.parse(localStorage.getItem('racle_users') || '[]');
-      if (users.find(u => u.email === email)) {
-        throw new Error('Email already registered. Please login.');
-      }
+      if (users.find(u => u.email === email)) throw new Error('Email already registered. Please login.');
       users.push({ name, email, password });
       localStorage.setItem('racle_users', JSON.stringify(users));
       currentUser = { name, email };
@@ -284,9 +267,7 @@ async function handleRegister(e) {
       alert('This email is already registered. Please log in instead.');
       switchTab('login');
       document.getElementById('loginEmail').value = email;
-    } else {
-      alert(msg);
-    }
+    } else alert(msg);
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Create Identity'; }
   }
@@ -314,13 +295,11 @@ function updateUIForLoggedIn() {
   authBtn.onclick = logout;
   if (galleryNav) galleryNav.style.display = 'inline-block';
   const sub = document.getElementById('pinSubtitle');
-  if (sub) sub.textContent = `${currentUser.name || 'Your'}'s board`;
+  if (sub) sub.textContent = `${currentUser.name || 'Your'}'s board · same on every device`;
 }
 
 async function logout() {
-  if (cloudEnabled && sbClient) {
-    await sbClient.auth.signOut();
-  }
+  if (cloudEnabled && sbClient) await sbClient.auth.signOut();
   localStorage.removeItem('racle_user');
   currentUser = null;
   items = [];
@@ -335,31 +314,19 @@ async function logout() {
   showSection('auth');
 }
 
-// ===== PROFILE PICTURE =====
 async function handleProfilePhotoChange(event) {
   const input = event.target;
   const file = input.files && input.files[0];
   if (!file || !currentUser) return;
-  if (!file.type.startsWith('image/')) {
-    alert('Please choose an image file.');
-    input.value = '';
-    return;
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    alert('Please choose an image smaller than 5 MB.');
-    input.value = '';
-    return;
-  }
-
+  if (!file.type.startsWith('image/')) { alert('Please choose an image file.'); input.value = ''; return; }
+  if (file.size > 5 * 1024 * 1024) { alert('Please choose an image smaller than 5 MB.'); input.value = ''; return; }
   const button = document.getElementById('profileAvatarButton');
   if (button) button.disabled = true;
   try {
     let avatarUrl;
     if (cloudEnabled && sbClient && currentUser.id) {
       avatarUrl = await uploadImageToCloud(file);
-      const { error } = await sbClient.auth.updateUser({
-        data: { avatar_url: avatarUrl }
-      });
+      const { error } = await sbClient.auth.updateUser({ data: { avatar_url: avatarUrl } });
       if (error) throw error;
     } else {
       avatarUrl = await new Promise((resolve, reject) => {
@@ -371,19 +338,16 @@ async function handleProfilePhotoChange(event) {
       localStorage.setItem(`racle_avatar_${currentUser.email}`, avatarUrl);
     }
     currentUser.avatarUrl = avatarUrl;
-    if (!cloudEnabled || !sbClient) {
-      localStorage.setItem('racle_user', JSON.stringify(currentUser));
-    }
+    if (!cloudEnabled || !sbClient) localStorage.setItem('racle_user', JSON.stringify(currentUser));
     updateUIForLoggedIn();
   } catch (error) {
-    alert(error.message || 'Could not update profile picture. Please try again.');
+    alert(error.message || 'Could not update profile picture.');
   } finally {
     if (button) button.disabled = false;
     input.value = '';
   }
 }
 
-// ===== CLOUD PINS =====
 async function loadPinsFromCloud() {
   if (!sbClient || !currentUser) return;
   const { data, error } = await sbClient
@@ -391,14 +355,12 @@ async function loadPinsFromCloud() {
     .select('*')
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: false });
-
   if (error) {
     console.error(error);
     alert('Could not load album: ' + error.message);
     items = [];
     return;
   }
-
   items = (data || []).map(row => ({
     id: row.id,
     title: row.title || 'Untitled',
@@ -410,13 +372,35 @@ async function loadPinsFromCloud() {
   }));
 }
 
+async function syncAlbumFromCloud() {
+  if (!currentUser) { alert('Please log in first.'); return; }
+  const btn = document.getElementById('syncBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+  try {
+    if (cloudEnabled && sbClient) {
+      await loadPinsFromCloud();
+      renderGallery();
+      if (btn) btn.textContent = '✓ Synced';
+      setTimeout(() => { if (btn) btn.textContent = '↻ Sync'; }, 1200);
+    } else {
+      alert('Cloud is not connected. Multi-device search needs your Supabase key in config.js.');
+    }
+  } catch (err) {
+    alert(err.message || 'Sync failed');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => renderGallery(), 150);
+}
+
 async function uploadImageToCloud(file) {
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
   const path = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-  const { error } = await sbClient.storage.from('album-images').upload(path, file, {
-    cacheControl: '3600',
-    upsert: false
-  });
+  const { error } = await sbClient.storage.from('album-images').upload(path, file, { cacheControl: '3600', upsert: false });
   if (error) throw error;
   const { data } = sbClient.storage.from('album-images').getPublicUrl(path);
   return data.publicUrl;
@@ -425,20 +409,13 @@ async function uploadImageToCloud(file) {
 async function addPinCloud({ title, text, file }) {
   let imageUrl = null;
   if (file) imageUrl = await uploadImageToCloud(file);
-
-  const { data, error } = await sbClient
-    .from('pins')
-    .insert({
-      user_id: currentUser.id,
-      title: title || 'Untitled',
-      note: text || '',
-      image_url: imageUrl
-    })
-    .select()
-    .single();
-
+  const { data, error } = await sbClient.from('pins').insert({
+    user_id: currentUser.id,
+    title: title || 'Untitled',
+    note: text || '',
+    image_url: imageUrl
+  }).select().single();
   if (error) throw error;
-
   return {
     id: data.id,
     title: data.title,
@@ -454,16 +431,13 @@ async function deletePinCloud(id) {
   if (item?.photo && item.photo.includes('/album-images/')) {
     try {
       const parts = item.photo.split('/album-images/');
-      if (parts[1]) {
-        await sbClient.storage.from('album-images').remove([parts[1]]);
-      }
+      if (parts[1]) await sbClient.storage.from('album-images').remove([parts[1]]);
     } catch (_) {}
   }
   const { error } = await sbClient.from('pins').delete().eq('id', id).eq('user_id', currentUser.id);
   if (error) throw error;
 }
 
-// ===== UPLOAD HANDLERS =====
 function previewPhoto(e) {
   const file = e.target.files[0];
   if (file && !validateImage(file)) { e.target.value = ''; return; }
@@ -473,7 +447,6 @@ function previewPhoto(e) {
     reader.onload = (ev) => {
       preview.src = ev.target.result;
       preview.classList.remove('hidden');
-      preview.dataset.fileName = file.name;
     };
     reader.readAsDataURL(file);
     preview._file = file;
@@ -486,15 +459,13 @@ function previewPhoto(e) {
 async function handleUpload(e) {
   e.preventDefault();
   if (!currentUser) { showSection('auth'); return; }
-
   const title = document.getElementById('itemTitle').value.trim();
   const text = document.getElementById('itemText').value.trim();
   const photoInput = document.getElementById('itemPhoto');
   const file = photoInput.files[0] || document.getElementById('photoPreview')._file;
   if (file && !validateImage(file)) return;
   const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
-  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving to album…'; }
-
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; }
   try {
     if (cloudEnabled && sbClient) {
       const pin = await addPinCloud({ title, text, file });
@@ -502,12 +473,9 @@ async function handleUpload(e) {
     } else {
       const preview = document.getElementById('photoPreview');
       items.unshift({
-        id: Date.now(),
-        title,
-        text,
+        id: Date.now(), title, text,
         photo: preview.classList.contains('hidden') ? null : preview.src,
-        date: new Date().toLocaleString(),
-        ts: Date.now()
+        date: new Date().toLocaleString(), ts: Date.now()
       });
       localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
     }
@@ -526,49 +494,32 @@ async function handleUpload(e) {
 }
 
 function validateImage(file) {
-  if (!file.type || !file.type.startsWith('image/')) {
-    alert('Please choose an image file.');
-    return false;
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    alert('Please choose an image smaller than 10 MB.');
-    return false;
-  }
+  if (!file.type || !file.type.startsWith('image/')) { alert('Please choose an image file.'); return false; }
+  if (file.size > 10 * 1024 * 1024) { alert('Please choose an image smaller than 10 MB.'); return false; }
   return true;
 }
 
-function triggerQuickUpload() {
-  document.getElementById('quickPhoto').click();
-}
+function triggerQuickUpload() { document.getElementById('quickPhoto').click(); }
 
 async function quickUpload(e) {
   const files = Array.from(e.target.files || []);
   if (!files.length || !currentUser) return;
   if (files.some(file => !validateImage(file))) { e.target.value = ''; return; }
-  const uploadBtn = document.querySelector('.toolbar-btn');
+  const uploadBtn = document.querySelector('.toolbar-btn.primary') || document.querySelector('.toolbar-btn');
   const originalLabel = uploadBtn?.textContent;
   if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.textContent = `Uploading 0/${files.length}…`; }
-
   try {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (uploadBtn) uploadBtn.textContent = `Uploading ${i + 1}/${files.length}…`;
       const title = file.name.replace(/\.[^/.]+$/, '') || 'Untitled';
       if (cloudEnabled && sbClient) {
-        const pin = await addPinCloud({ title, text: '', file });
-        items.unshift(pin);
+        items.unshift(await addPinCloud({ title, text: '', file }));
       } else {
         await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (ev) => {
-            items.unshift({
-              id: Date.now() + i,
-              title,
-              text: '',
-              photo: ev.target.result,
-              date: new Date().toLocaleString(),
-              ts: Date.now() + i
-            });
+            items.unshift({ id: Date.now() + i, title, text: '', photo: ev.target.result, date: new Date().toLocaleString(), ts: Date.now() + i });
             resolve();
           };
           reader.onerror = reject;
@@ -576,9 +527,7 @@ async function quickUpload(e) {
         });
       }
     }
-    if (!cloudEnabled) {
-      localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
-    }
+    if (!cloudEnabled) localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
     renderGallery();
   } catch (err) {
     alert(err.message || 'Upload failed');
@@ -591,15 +540,10 @@ async function quickUpload(e) {
 async function deletePin(id, event) {
   if (event) event.stopPropagation();
   if (!confirm('Delete this pin from Racle Album?')) return;
-
   try {
-    if (cloudEnabled && sbClient) {
-      await deletePinCloud(id);
-    }
+    if (cloudEnabled && sbClient) await deletePinCloud(id);
     items = items.filter(i => i.id !== id);
-    if (!cloudEnabled && currentUser) {
-      localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
-    }
+    if (!cloudEnabled && currentUser) localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
     if (currentLightboxId === id) closeLightbox();
     renderGallery();
   } catch (err) {
@@ -639,34 +583,25 @@ async function editCurrentPin() {
   if (note === null) return;
   const cleanTitle = title.trim() || 'Untitled';
   const cleanNote = note.trim();
-
   try {
     if (cloudEnabled && sbClient) {
-      const { error } = await sbClient.from('pins')
-        .update({ title: cleanTitle, note: cleanNote })
-        .eq('id', item.id)
-        .eq('user_id', currentUser.id);
+      const { error } = await sbClient.from('pins').update({ title: cleanTitle, note: cleanNote }).eq('id', item.id).eq('user_id', currentUser.id);
       if (error) throw error;
     }
     item.title = cleanTitle;
     item.text = cleanNote;
-    if (!cloudEnabled && currentUser) {
-      localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
-    }
+    if (!cloudEnabled && currentUser) localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
     document.getElementById('lightboxTitle').textContent = item.title;
     document.getElementById('lightboxText').textContent = item.text;
     renderGallery();
   } catch (err) {
-    alert(err.message || 'Could not update photo details');
+    alert(err.message || 'Could not update');
   }
 }
 
 function downloadCurrentPin() {
   const item = items.find(i => i.id === currentLightboxId);
-  if (!item || !item.photo) {
-    alert('No image to download');
-    return;
-  }
+  if (!item || !item.photo) { alert('No image to download'); return; }
   const a = document.createElement('a');
   a.href = item.photo;
   a.download = (item.title || 'racle-album') + '.jpg';
@@ -679,10 +614,11 @@ function getFilteredSortedItems() {
   const sort = document.getElementById('sortSelect')?.value || 'newest';
   let list = [...items];
   if (q) {
-    list = list.filter(i =>
-      (i.title || '').toLowerCase().includes(q) ||
-      (i.text || '').toLowerCase().includes(q)
-    );
+    const terms = q.split(/\s+/).filter(Boolean);
+    list = list.filter(i => {
+      const hay = ((i.title || '') + ' ' + (i.text || '')).toLowerCase();
+      return terms.every(t => hay.includes(t));
+    });
   }
   if (sort === 'oldest') list.sort((a, b) => (a.ts || 0) - (b.ts || 0));
   else if (sort === 'title') list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
@@ -693,58 +629,31 @@ function getFilteredSortedItems() {
 function renderGallery() {
   const grid = document.getElementById('galleryGrid');
   if (!grid) return;
-
   const list = getFilteredSortedItems();
   const countEl = document.getElementById('pinCount');
   if (countEl) {
-    countEl.textContent = items.length === 0
-      ? 'Your album is ready for its first memory'
-      : `${items.length} memor${items.length === 1 ? 'y' : 'ies'} saved${list.length !== items.length ? ` · ${list.length} shown` : ''}`;
+    const q = (document.getElementById('searchInput')?.value || '').trim();
+    if (items.length === 0) countEl.textContent = 'Your album is ready — upload from any device';
+    else if (q && list.length === 0) countEl.textContent = `No matches for "${q}" · try another word`;
+    else if (q) countEl.textContent = `${list.length} match${list.length === 1 ? '' : 'es'} for "${q}" · ${items.length} total in cloud`;
+    else countEl.textContent = `${items.length} memor${items.length === 1 ? 'y' : 'ies'} saved · synced across your devices`;
   }
-
   if (list.length === 0) {
     if (items.length === 0) {
-      grid.innerHTML = `
-        <div class="gallery-empty-state">
-          <div class="gallery-empty-icon" aria-hidden="true">✦</div>
-          <h2>Your story starts here</h2>
-          <p>Make this space yours. Add your favourite photos, meaningful moments, and little notes you want to keep close.</p>
-          <button class="btn primary" type="button" onclick="triggerQuickUpload()">＋ Add your first photo</button>
-        </div>
-      `;
+      grid.innerHTML = `<div class="gallery-empty-state"><div class="gallery-empty-icon" aria-hidden="true">✦</div><h2>Your story starts here</h2><p>Add photos from your phone or computer — they stay in the cloud for every device.</p><button class="btn primary" type="button" onclick="triggerQuickUpload()">＋ Add your first photo</button></div>`;
     } else {
-      grid.innerHTML = `
-        <div class="gallery-no-results">
-          <div class="gallery-empty-icon" aria-hidden="true">⌕</div>
-          <h2>No memories found</h2>
-          <p>Try another title or note, or clear your search to see the whole album again.</p>
-          <button class="btn" type="button" onclick="document.getElementById('searchInput').value='';renderGallery()">Clear search</button>
-        </div>
-      `;
+      grid.innerHTML = `<div class="gallery-no-results"><div class="gallery-empty-icon" aria-hidden="true">⌕</div><h2>No memories found</h2><p>Try another word, or clear search to see the full album.</p><button class="btn" type="button" onclick="document.getElementById('searchInput').value='';renderGallery()">Clear search</button></div>`;
     }
     return;
   }
-
   let html = '';
   list.forEach((item) => {
     const idAttr = typeof item.id === 'string' ? `'${item.id}'` : item.id;
-    html += `
-      <div class="pin-card" onclick="openLightbox(${idAttr})" tabindex="0" role="button" aria-label="Open ${escapeHtml(item.title || 'memory')}">
-        <button class="pin-delete" type="button" title="Delete memory" aria-label="Delete ${escapeHtml(item.title || 'memory')}" onclick="deletePin(${idAttr}, event)">×</button>
-        ${item.photo
-          ? `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">`
-          : '<div class="pin-card-no-image" aria-hidden="true">✦</div>'}
-        <div class="pin-card-body">
-          <h3>${escapeHtml(item.title || 'Untitled memory')}</h3>
-          ${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}
-          <div class="pin-card-date">${escapeHtml(item.date || '')}</div>
-        </div>
-      </div>
-    `;
+    html += `<div class="pin-card" onclick="openLightbox(${idAttr})" tabindex="0" role="button"><button class="pin-delete" type="button" title="Delete" onclick="deletePin(${idAttr}, event)">×</button>${item.photo ? `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">` : '<div class="pin-card-no-image">✦</div>'}<div class="pin-card-body"><h3>${escapeHtml(item.title || 'Untitled')}</h3>${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}<div class="pin-card-date">${escapeHtml(item.date || '')}</div></div></div>`;
   });
-
   grid.innerHTML = html;
 }
+
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text || '';
