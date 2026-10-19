@@ -91,9 +91,10 @@ const cloudEnabled =
   !SUPABASE_ANON_KEY.includes('PASTE_') &&
   SUPABASE_URL.startsWith('http');
 
-let supabase = null;
-if (cloudEnabled && window.supabase) {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// IMPORTANT: do not name this variable "supabase" — the CDN already uses that global name
+let sbClient = null;
+if (cloudEnabled && window.supabase && typeof window.supabase.createClient === 'function') {
+  sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
 let currentUser = null;
@@ -106,9 +107,9 @@ function setCloudStatus(msg) {
 }
 
 async function init() {
-  if (cloudEnabled && supabase) {
+  if (cloudEnabled && sbClient) {
     setCloudStatus('Cloud connected • Private • Free Tier');
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await sbClient.auth.getSession();
     if (session?.user) {
       currentUser = {
         id: session.user.id,
@@ -123,7 +124,7 @@ async function init() {
       showSection('auth');
     }
 
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    sbClient.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         currentUser = null;
         items = [];
@@ -132,7 +133,6 @@ async function init() {
     });
   } else {
     setCloudStatus('Local mode • Add keys in config.js for cloud');
-    // Fallback localStorage
     const savedUser = localStorage.getItem('racle_user');
     if (savedUser) {
       currentUser = JSON.parse(savedUser);
@@ -153,7 +153,6 @@ function showSection(id) {
 }
 
 function switchTab(tab) {
-  // Keep the auth tabs reliable even if their inline onclick attributes change.
   const loginForm = document.getElementById('loginForm');
   const registerForm = document.getElementById('registerForm');
   const tabs = document.querySelectorAll('.tabs .tab');
@@ -183,8 +182,8 @@ async function handleLogin(e) {
   if (btn) { btn.disabled = true; btn.textContent = 'Connecting...'; }
 
   try {
-    if (cloudEnabled && supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (cloudEnabled && sbClient) {
+      const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
       if (error) throw error;
       currentUser = {
         id: data.user.id,
@@ -221,22 +220,38 @@ async function handleRegister(e) {
   const btn = document.getElementById('registerBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
 
+  if (!name || !email || !password) {
+    alert('Please fill in name, email, and password.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Identity'; }
+    return;
+  }
+  if (password.length < 6) {
+    alert('Password must be at least 6 characters.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Identity'; }
+    return;
+  }
+
   try {
-    if (cloudEnabled && supabase) {
-      const { data, error } = await supabase.auth.signUp({
+    if (cloudEnabled && sbClient) {
+      const { data, error } = await sbClient.auth.signUp({
         email,
         password,
         options: { data: { name } }
       });
       if (error) throw error;
-      if (!data.user) throw new Error('Registration failed');
+      if (!data.user) throw new Error('Registration failed. Please try again.');
+
       currentUser = { id: data.user.id, email, name };
-      // If email confirmation is required, session may be null
+
       if (!data.session) {
-        alert('Account created! Check your email to confirm, then login.');
+        localStorage.setItem('racle_pending_email', email);
+        alert('Account created and saved!\n\nCheck your email to confirm, then log in.\n\n(Tip: In Supabase → Authentication → Providers → Email, you can turn off "Confirm email" for instant login.)');
         switchTab('login');
+        document.getElementById('loginEmail').value = email;
         return;
       }
+
+      localStorage.removeItem('racle_pending_email');
       updateUIForLoggedIn();
       items = [];
       showSection('gallery');
@@ -257,7 +272,14 @@ async function handleRegister(e) {
       renderGallery();
     }
   } catch (err) {
-    alert(err.message || 'Registration failed');
+    const msg = err?.message || 'Registration failed';
+    if (/already|registered|exists/i.test(msg)) {
+      alert('This email is already registered. Please log in instead.');
+      switchTab('login');
+      document.getElementById('loginEmail').value = email;
+    } else {
+      alert(msg);
+    }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Create Identity'; }
   }
@@ -274,8 +296,8 @@ function updateUIForLoggedIn() {
 }
 
 async function logout() {
-  if (cloudEnabled && supabase) {
-    await supabase.auth.signOut();
+  if (cloudEnabled && sbClient) {
+    await sbClient.auth.signOut();
   }
   localStorage.removeItem('racle_user');
   currentUser = null;
@@ -291,8 +313,8 @@ async function logout() {
 
 // ===== CLOUD PINS =====
 async function loadPinsFromCloud() {
-  if (!supabase || !currentUser) return;
-  const { data, error } = await supabase
+  if (!sbClient || !currentUser) return;
+  const { data, error } = await sbClient
     .from('pins')
     .select('*')
     .eq('user_id', currentUser.id)
@@ -319,12 +341,12 @@ async function loadPinsFromCloud() {
 async function uploadImageToCloud(file) {
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
   const path = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-  const { error } = await supabase.storage.from('album-images').upload(path, file, {
+  const { error } = await sbClient.storage.from('album-images').upload(path, file, {
     cacheControl: '3600',
     upsert: false
   });
   if (error) throw error;
-  const { data } = supabase.storage.from('album-images').getPublicUrl(path);
+  const { data } = sbClient.storage.from('album-images').getPublicUrl(path);
   return data.publicUrl;
 }
 
@@ -332,7 +354,7 @@ async function addPinCloud({ title, text, file }) {
   let imageUrl = null;
   if (file) imageUrl = await uploadImageToCloud(file);
 
-  const { data, error } = await supabase
+  const { data, error } = await sbClient
     .from('pins')
     .insert({
       user_id: currentUser.id,
@@ -357,16 +379,15 @@ async function addPinCloud({ title, text, file }) {
 
 async function deletePinCloud(id) {
   const item = items.find(i => i.id === id);
-  // Try remove file from storage if path is in our bucket
   if (item?.photo && item.photo.includes('/album-images/')) {
     try {
       const parts = item.photo.split('/album-images/');
       if (parts[1]) {
-        await supabase.storage.from('album-images').remove([parts[1]]);
+        await sbClient.storage.from('album-images').remove([parts[1]]);
       }
     } catch (_) {}
   }
-  const { error } = await supabase.from('pins').delete().eq('id', id).eq('user_id', currentUser.id);
+  const { error } = await sbClient.from('pins').delete().eq('id', id).eq('user_id', currentUser.id);
   if (error) throw error;
 }
 
@@ -403,7 +424,7 @@ async function handleUpload(e) {
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving to album…'; }
 
   try {
-    if (cloudEnabled && supabase) {
+    if (cloudEnabled && sbClient) {
       const pin = await addPinCloud({ title, text, file });
       items.unshift(pin);
     } else {
@@ -461,7 +482,7 @@ async function quickUpload(e) {
       const file = files[i];
       if (uploadBtn) uploadBtn.textContent = `Uploading ${i + 1}/${files.length}…`;
       const title = file.name.replace(/\.[^/.]+$/, '') || 'Untitled';
-      if (cloudEnabled && supabase) {
+      if (cloudEnabled && sbClient) {
         const pin = await addPinCloud({ title, text: '', file });
         items.unshift(pin);
       } else {
@@ -500,7 +521,7 @@ async function deletePin(id, event) {
   if (!confirm('Delete this pin from Racle Album?')) return;
 
   try {
-    if (cloudEnabled && supabase) {
+    if (cloudEnabled && sbClient) {
       await deletePinCloud(id);
     }
     items = items.filter(i => i.id !== id);
@@ -548,8 +569,8 @@ async function editCurrentPin() {
   const cleanNote = note.trim();
 
   try {
-    if (cloudEnabled && supabase) {
-      const { error } = await supabase.from('pins')
+    if (cloudEnabled && sbClient) {
+      const { error } = await sbClient.from('pins')
         .update({ title: cleanTitle, note: cleanNote })
         .eq('id', item.id)
         .eq('user_id', currentUser.id);
