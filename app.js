@@ -201,7 +201,11 @@ async function handleLogin(e) {
       const users = JSON.parse(localStorage.getItem('racle_users') || '[]');
       const user = users.find(u => u.email === email && u.password === password);
       if (!user) throw new Error('Invalid email or password');
-      currentUser = { name: user.name, email: user.email };
+      currentUser = {
+        name: user.name,
+        email: user.email,
+        avatarUrl: localStorage.getItem(`racle_avatar_${email}`) || null
+      };
       localStorage.setItem('racle_user', JSON.stringify(currentUser));
       items = JSON.parse(localStorage.getItem(`racle_items_${email}`) || '[]');
       updateUIForLoggedIn();
