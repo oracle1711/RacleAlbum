@@ -626,58 +626,53 @@ function renderGallery() {
   const countEl = document.getElementById('pinCount');
   if (countEl) {
     countEl.textContent = items.length === 0
-      ? 'No pins yet — upload your first image'
-      : `${items.length} pin${items.length === 1 ? '' : 's'}${list.length !== items.length ? ` · showing ${list.length}` : ''}`;
+      ? 'Your album is ready for its first memory'
+      : `${items.length} memor${items.length === 1 ? 'y' : 'ies'} saved${list.length !== items.length ? ` · ${list.length} shown` : ''}`;
+  }
+
+  if (list.length === 0) {
+    if (items.length === 0) {
+      grid.innerHTML = `
+        <div class="gallery-empty-state">
+          <div class="gallery-empty-icon" aria-hidden="true">✦</div>
+          <h2>Your story starts here</h2>
+          <p>Make this space yours. Add your favourite photos, meaningful moments, and little notes you want to keep close.</p>
+          <button class="btn primary" type="button" onclick="triggerQuickUpload()">＋ Add your first photo</button>
+        </div>
+      `;
+    } else {
+      grid.innerHTML = `
+        <div class="gallery-no-results">
+          <div class="gallery-empty-icon" aria-hidden="true">⌕</div>
+          <h2>No memories found</h2>
+          <p>Try another title or note, or clear your search to see the whole album again.</p>
+          <button class="btn" type="button" onclick="document.getElementById('searchInput').value='';renderGallery()">Clear search</button>
+        </div>
+      `;
+    }
+    return;
   }
 
   let html = '';
-  const emptySizes = ['tall', 'medium', 'short', 'medium', 'tall', 'short'];
-
-  html += `
-    <div class="pin-empty ${emptySizes[0]}" onclick="triggerQuickUpload()">
-      <div class="plus">+</div>
-      <span class="label">Upload image</span>
-    </div>
-  `;
-
-  list.forEach((item, i) => {
+  list.forEach((item) => {
     const idAttr = typeof item.id === 'string' ? `'${item.id}'` : item.id;
     html += `
-      <div class="pin-card" onclick="openLightbox(${idAttr})">
-        <button class="pin-delete" title="Delete" onclick="deletePin(${idAttr}, event)">×</button>
-        ${item.photo ? `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">` : ''}
+      <div class="pin-card" onclick="openLightbox(${idAttr})" tabindex="0" role="button" aria-label="Open ${escapeHtml(item.title || 'memory')}">
+        <button class="pin-delete" type="button" title="Delete memory" aria-label="Delete ${escapeHtml(item.title || 'memory')}" onclick="deletePin(${idAttr}, event)">×</button>
+        ${item.photo
+          ? `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">`
+          : '<div class="pin-card-no-image" aria-hidden="true">✦</div>'}
         <div class="pin-card-body">
-          <h3>${escapeHtml(item.title)}</h3>
+          <h3>${escapeHtml(item.title || 'Untitled memory')}</h3>
           ${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}
-          <div class="pin-card-date">${item.date || ''}</div>
+          <div class="pin-card-date">${escapeHtml(item.date || '')}</div>
         </div>
       </div>
     `;
-    if ((i + 1) % 4 === 0) {
-      const size = emptySizes[(i + 1) % emptySizes.length];
-      html += `
-        <div class="pin-empty ${size}" onclick="triggerQuickUpload()">
-          <div class="plus">+</div>
-          <span class="label">Upload image</span>
-        </div>
-      `;
-    }
   });
-
-  if (list.length < 4) {
-    for (let i = 1; i < 4; i++) {
-      html += `
-        <div class="pin-empty ${emptySizes[i]}" onclick="triggerQuickUpload()">
-          <div class="plus">+</div>
-          <span class="label">Upload image</span>
-        </div>
-      `;
-    }
-  }
 
   grid.innerHTML = html;
 }
-
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text || '';
