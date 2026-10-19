@@ -1486,3 +1486,126 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .profile-avatar-image { display: block; width: 100%; height: 100%; object-fit: cover; }
 #profileAvatarFallback { font-size: 1.25rem; }
 @media (max-width: 600px) { .profile-avatar-button { width: 36px; height: 36px; } }
+
+
+/* ===== SOLO LEVELING DASHBOARD LAYOUT (reference match) ===== */
+:root { --ra-cyan:#16d9ff; --ra-blue:#075bea; --ra-violet:#852cff; }
+html, body { min-height:100%; }
+body { background:#020611; color:#eaf4ff; overflow-x:hidden; }
+#bgCanvas {
+  position:fixed; inset:0; width:100%; height:100%; z-index:-2;
+  background-color:#020611;
+  background-image:
+    linear-gradient(90deg, rgba(1,5,18,.48) 0%, rgba(1,5,18,.2) 42%, rgba(1,5,18,.4) 100%),
+    linear-gradient(180deg, rgba(0,4,16,.3), rgba(0,4,16,.76)),
+    url("https://wallpapercg.com/download/sung-jinwoo-in-season-1-5120x2880-32437.jpg");
+  background-position:center 38%; background-size:cover; background-repeat:no-repeat;
+}
+.side-nav {
+  position:fixed; z-index:120; left:0; top:0; bottom:0; width:240px;
+  padding:20px 14px; background:rgba(1,7,22,.72); border-right:1px solid rgba(26,150,255,.17);
+  backdrop-filter:blur(16px); display:flex; flex-direction:column;
+}
+.nav-brand { display:flex; align-items:center; gap:12px; padding:0 8px 30px; cursor:pointer; color:#eaf8ff; background:none; -webkit-text-fill-color:initial; }
+.brand-mark { width:52px; height:52px; display:grid; place-items:center; border:1px solid #0bbcff; border-radius:50%; color:#22dfff; font-size:27px; box-shadow:0 0 18px #007dff35,inset 0 0 15px #007dff24; }
+.brand-copy { display:flex; flex-direction:column; line-height:1.1; }
+.brand-copy strong { font-size:25px; letter-spacing:-1px; color:#28d9ff; font-weight:700; }
+.brand-copy small { margin-top:5px; color:#39cfff; font-size:10px; white-space:nowrap; }
+.side-links { display:grid; gap:7px; }
+.side-link { width:100%; display:flex; align-items:center; gap:13px; padding:14px 15px; border:1px solid transparent; border-radius:11px; background:transparent; color:#dcecff; text-align:left; cursor:pointer; font:500 15px Inter,sans-serif; transition:.2s; }
+.side-link span { width:20px; font-size:23px; line-height:1; color:#b4d8ff; text-align:center; }
+.side-link:hover,.side-link.active { color:#fff; border-color:#087dff; background:linear-gradient(100deg,rgba(0,114,255,.4),rgba(0,65,170,.22)); box-shadow:0 0 18px #006eff25,inset 0 0 18px #006eff12; }
+.side-link.active span { color:#35dfff; }
+.navbar { position:fixed; top:0; right:0; left:240px; z-index:110; height:92px; padding:18px 28px 18px 38px; background:linear-gradient(180deg,rgba(1,6,20,.66),rgba(1,6,20,.12)); border:0; display:flex; justify-content:space-between; gap:24px; }
+.top-search { display:flex; align-items:center; gap:12px; width:min(355px,45vw); height:48px; padding:0 16px; border:1px solid rgba(23,126,255,.4); border-radius:17px; background:rgba(1,8,26,.72); box-shadow:inset 0 0 20px #006eff0b; }
+.top-search>span { color:#8bbcff; font-size:27px; line-height:1; }
+.top-search input { min-width:0; width:100%; border:0; outline:0; background:transparent; color:#eaf4ff; font:14px Inter,sans-serif; }
+.top-search input::placeholder { color:#8ba8d8; }
+.nav-links { display:flex; align-items:center; gap:15px; }
+.profile-control { margin:0; }
+.profile-avatar-button { width:54px; height:54px; border-color:#16cfff; background:rgba(1,8,26,.8); box-shadow:0 0 15px #007dff35; }
+#profileAvatarFallback { color:#f1f7ff; font-size:25px; }
+.profile-name { color:#f1f7ff; font-size:14px; white-space:nowrap; }
+#authBtn { padding:9px 13px; border-radius:8px; }
+.workspace { margin-left:240px; min-height:100vh; padding-top:90px; position:relative; z-index:1; }
+.section { min-height:calc(100vh - 90px); padding:26px 24px 70px; }
+#gallery { max-width:1480px; margin:0 auto; }
+#gallery .welcome-hero { min-height:235px; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; padding:20px clamp(12px,3vw,50px) 24px; }
+.welcome-title { display:flex; align-items:center; gap:18px; }
+.welcome-crown { font-size:36px; color:#17dcff; text-shadow:0 0 18px #00cfff9c; }
+.welcome-title h1 { font-size:clamp(26px,2.3vw,34px); line-height:1.2; font-weight:500; letter-spacing:-.7px; color:#f2f7ff; }
+.welcome-title p { margin-top:10px; font-size:15px; color:#d7eaff; }
+.hero-upload { display:flex; align-items:center; justify-content:center; gap:13px; min-width:240px; margin:26px 0 0 53px; padding:12px 24px; border:1px solid #804aff; border-radius:28px; color:#f1f5ff; background:linear-gradient(100deg,rgba(3,9,30,.92),rgba(22,2,63,.9)); box-shadow:0 0 0 1px #087dff4a,0 0 22px #642aff35; font:600 15px Inter,sans-serif; cursor:pointer; }
+.hero-upload span { font-size:25px; color:#db66ff; }
+.hero-upload:hover { box-shadow:0 0 24px #7c3cff80; }
+#gallery .album-panel { max-width:1120px; margin:0 auto; padding:22px 25px 28px; border:1px solid rgba(0,124,255,.66); border-radius:15px; background:linear-gradient(145deg,rgba(1,10,28,.9),rgba(1,7,20,.84)); box-shadow:0 20px 60px #0006,inset 0 0 35px #006eff08; backdrop-filter:blur(13px); }
+.album-panel-heading { display:flex; align-items:center; gap:13px; padding:0 0 17px; border-bottom:1px solid rgba(0,126,255,.3); margin-bottom:17px; }
+.album-heading-icon { width:44px; height:44px; display:grid; place-items:center; border:1px solid #0ccfff; border-radius:50%; color:#20dfff; font-size:25px; box-shadow:0 0 14px #00aaff29; }
+.album-panel-heading h2 { font-size:18px; font-weight:600; }
+.album-panel-heading p { color:#93bfff; font-size:12px; margin-top:3px; }
+.album-total { margin-left:auto; color:#88b7ff; font-size:12px; text-align:right; }
+#gallery .toolbar { max-width:none; margin:0 0 16px; padding:0; border:0; background:transparent; box-shadow:none; justify-content:flex-end; }
+#gallery .toolbar::before,#gallery .toolbar::after { display:none; }
+#gallery .toolbar .search-wrap { display:none; }
+#gallery #sortSelect { border-radius:9px; padding:10px 15px; min-width:120px; background:rgba(1,8,24,.86); }
+#gallery .toolbar-btn { border-radius:9px; padding:10px 15px; }
+#gallery .pin-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:22px; max-width:none; padding:0; margin:0; }
+#gallery .pin-card { min-width:0; margin:0; break-inside:auto; border:1px solid #116bff; border-radius:13px; overflow:hidden; background:rgba(2,9,25,.94); box-shadow:0 9px 28px #0004; }
+#gallery .pin-card:nth-child(4n+1) { border-color:#08caff; }
+#gallery .pin-card:nth-child(4n+2) { border-color:#287dff; }
+#gallery .pin-card:nth-child(4n+3) { border-color:#7350ff; }
+#gallery .pin-card img { width:100%; height:clamp(145px,15vw,220px); min-height:0; max-height:none; object-fit:cover; }
+#gallery .pin-card-body { padding:10px 13px 14px; }
+#gallery .pin-card-body h3 { color:#eff6ff; font-size:14px; font-weight:500; }
+#gallery .pin-card-date { color:#8ebcff; font-size:11px; }
+#gallery .pin-card .pin-delete { opacity:1; top:auto; bottom:6px; width:25px; height:25px; border-radius:5px; background:transparent; color:#80baff; font-size:20px; }
+#gallery .gallery-empty-state,#gallery .gallery-no-results { grid-column:1/-1; }
+#auth { margin-left:240px; }
+#upload { margin-left:240px; }
+#auth .auth-container { min-height:calc(100vh - 150px); }
+@media(max-width:1100px) {
+ #gallery .pin-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #gallery .album-panel { padding:18px; }
+ .side-nav { width:205px; }
+ .navbar { left:205px; }
+ .workspace { margin-left:205px; }
+ #auth,#upload { margin-left:205px; }
+ .brand-copy strong { font-size:21px; }
+}
+@media(max-width:700px) {
+ .side-nav { width:66px; padding:14px 7px; }
+ .nav-brand { justify-content:center; padding:0 0 28px; }
+ .brand-mark { width:44px; height:44px; font-size:23px; }
+ .brand-copy,.side-link:not(span) { }
+ .side-link { justify-content:center; gap:0; padding:13px 5px; font-size:0; }
+ .side-link span { font-size:23px; }
+ .navbar { left:66px; height:76px; padding:13px 12px; gap:8px; }
+ .top-search { width:auto; flex:1; min-width:80px; height:42px; padding:0 10px; }
+ .top-search input { font-size:12px; }
+ .nav-links { gap:7px; }
+ .profile-name { display:none; }
+ .profile-avatar-button { width:40px; height:40px; }
+ #authBtn { font-size:12px; padding:8px 9px; }
+ .workspace { margin-left:66px; padding-top:76px; }
+ .section { padding:15px 10px 40px; }
+ #auth,#upload { margin-left:66px; }
+ #gallery .welcome-hero { min-height:195px; padding:10px 8px 18px; }
+ .welcome-title { gap:10px; align-items:flex-start; }
+ .welcome-crown { font-size:25px; }
+ .welcome-title h1 { font-size:23px; }
+ .welcome-title p { font-size:12px; }
+ .hero-upload { margin:20px 0 0 35px; min-width:0; padding:10px 18px; font-size:13px; }
+ #gallery .album-panel { padding:13px 10px 16px; }
+ .album-panel-heading { gap:8px; }
+ .album-heading-icon { width:35px; height:35px; font-size:20px; }
+ .album-panel-heading h2 { font-size:15px; }
+ .album-total { display:none; }
+ #gallery .pin-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+ #gallery .pin-card img { height:clamp(105px,24vw,170px); }
+ #gallery .pin-card-body { padding:8px; }
+ #gallery .pin-card-body h3 { font-size:12px; }
+ #gallery .pin-card-date { font-size:10px; }
+ #gallery .toolbar { justify-content:flex-end; gap:6px; }
+ #gallery .toolbar-btn { font-size:11px; padding:8px 9px; }
+ #gallery #sortSelect { min-width:0; padding:8px; font-size:11px; }
+}
