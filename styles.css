@@ -11,7 +11,13 @@
   width: 100%;
   height: 100%;
   z-index: -1;
-  background: #05050a;
+  background-color: #05050a;
+  background-image:
+    linear-gradient(180deg, rgba(2, 5, 18, .56), rgba(2, 5, 18, .78)),
+    url("https://wallpapercg.com/download/sung-jinwoo-in-season-1-5120x2880-32437.jpg");
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 body {
