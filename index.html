@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>RacleAlbum - Your Personal Photo Space</title>
-  <link rel="stylesheet" href="styles.css?v=20261019-5">
+  <link rel="stylesheet" href="styles.css?v=20261019-6">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -33,7 +33,7 @@
         <div class="auth-system-status"><span class="status-light"></span> SYSTEM ONLINE <span class="status-divider">/</span> PRIVATE ALBUM</div>
         <h1>RacleAlbum</h1>
         <p class="auth-kicker">YOUR MEMORIES. YOUR UNIVERSE.</p>
-        <p class="subtitle">A personal photo space built for your world.</p>
+        <p class="subtitle">Access and search your album from any phone, tablet, or computer.</p>
         <div class="tabs" role="tablist" aria-label="Account access">
           <button type="button" class="tab active" data-tab="login" role="tab" aria-selected="true" onclick="switchTab('login')">Login</button>
           <button type="button" class="tab" data-tab="register" role="tab" aria-selected="false" onclick="switchTab('register')">Register</button>
@@ -41,26 +41,26 @@
         <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label>Identity // Email</label>
-            <input type="email" id="loginEmail" placeholder="user@network.com" required>
+            <input type="email" id="loginEmail" placeholder="user@network.com" required autocomplete="email">
           </div>
           <div class="form-group">
             <label>Access Key // Password</label>
-            <input type="password" id="loginPassword" placeholder="••••••••" required>
+            <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
           </div>
           <button type="submit" class="btn primary full" id="loginBtn">Initialize Session</button>
         </form>
         <form id="registerForm" class="auth-form hidden" onsubmit="handleRegister(event)">
           <div class="form-group">
             <label>Codename // Name</label>
-            <input type="text" id="regName" placeholder="Your identifier" required>
+            <input type="text" id="regName" placeholder="Your identifier" required autocomplete="name">
           </div>
           <div class="form-group">
             <label>Identity // Email</label>
-            <input type="email" id="regEmail" placeholder="user@network.com" required>
+            <input type="email" id="regEmail" placeholder="user@network.com" required autocomplete="email">
           </div>
           <div class="form-group">
             <label>Access Key // Password</label>
-            <input type="password" id="regPassword" placeholder="Minimum 6 characters" required minlength="6">
+            <input type="password" id="regPassword" placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password">
           </div>
           <button type="submit" class="btn primary full" id="registerBtn">Create Identity</button>
         </form>
@@ -73,19 +73,20 @@
     <div class="pin-header">
       <div class="gallery-eyebrow">YOUR PRIVATE MEMORY SPACE</div>
       <h1 class="pin-title">A home for your memories.</h1>
-      <p class="pin-subtitle" id="pinSubtitle">Your personal board — keep the moments, photos, and stories that matter to you.</p>
+      <p class="pin-subtitle" id="pinSubtitle">Your personal board — same album on every device.</p>
       <p class="pin-count" id="pinCount"></p>
     </div>
 
-    <div class="toolbar">
+    <div class="toolbar" id="albumToolbar">
       <div class="search-wrap">
-        <input type="search" id="searchInput" placeholder="Search your album..." oninput="renderGallery()">
+        <input type="search" id="searchInput" placeholder="Search photos & notes on any device..." oninput="onSearchInput()" enterkeyhint="search" autocomplete="off">
       </div>
       <select id="sortSelect" onchange="renderGallery()">
         <option value="newest">Newest first</option>
         <option value="oldest">Oldest first</option>
         <option value="title">Title A–Z</option>
       </select>
+      <button class="btn toolbar-btn" id="syncBtn" type="button" onclick="syncAlbumFromCloud()" title="Reload album from cloud">↻ Sync</button>
       <button class="btn primary toolbar-btn" onclick="triggerQuickUpload()">+ Upload</button>
     </div>
 
@@ -144,8 +145,8 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20261019-1"></script>
-  <script src="app.js?v=20261019-3"></script>
+  <script src="config.js?v=20261019-6"></script>
+  <script src="app.js?v=20261019-6"></script>
   <script>
     (() => {
       const bindAuthTabs = () => {
@@ -153,7 +154,6 @@
         const registerForm = document.getElementById('registerForm');
         const tabs = document.querySelectorAll('.tabs .tab');
         if (!loginForm || !registerForm || !tabs.length) return;
-
         const showTab = (tab) => {
           const register = tab === 'register';
           loginForm.classList.toggle('hidden', register);
@@ -166,7 +166,6 @@
             button.setAttribute('aria-selected', String(active));
           });
         };
-
         tabs.forEach((button) => {
           button.addEventListener('click', (event) => {
             event.preventDefault();
