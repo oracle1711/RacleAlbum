@@ -114,7 +114,8 @@ async function init() {
       currentUser = {
         id: session.user.id,
         email: session.user.email,
-        name: session.user.user_metadata?.name || session.user.email.split('@')[0]
+        name: session.user.user_metadata?.name || session.user.email.split('@')[0],
+        avatarUrl: session.user.user_metadata?.avatar_url || null
       };
       updateUIForLoggedIn();
       await loadPinsFromCloud();
@@ -136,6 +137,7 @@ async function init() {
     const savedUser = localStorage.getItem('racle_user');
     if (savedUser) {
       currentUser = JSON.parse(savedUser);
+      currentUser.avatarUrl = currentUser.avatarUrl || localStorage.getItem(`racle_avatar_${currentUser.email}`) || null;
       items = JSON.parse(localStorage.getItem(`racle_items_${currentUser.email}`) || '[]');
       updateUIForLoggedIn();
       showSection('gallery');
@@ -188,7 +190,8 @@ async function handleLogin(e) {
       currentUser = {
         id: data.user.id,
         email: data.user.email,
-        name: data.user.user_metadata?.name || email.split('@')[0]
+        name: data.user.user_metadata?.name || email.split('@')[0],
+        avatarUrl: data.user.user_metadata?.avatar_url || null
       };
       updateUIForLoggedIn();
       await loadPinsFromCloud();
@@ -286,6 +289,21 @@ async function handleRegister(e) {
 }
 
 function updateUIForLoggedIn() {
+  const profileControl = document.getElementById('profileControl');
+  if (profileControl) profileControl.style.display = 'flex';
+  const avatar = document.getElementById('profileAvatar');
+  const fallback = document.getElementById('profileAvatarFallback');
+  if (avatar && fallback) {
+    if (currentUser.avatarUrl) {
+      avatar.src = currentUser.avatarUrl;
+      avatar.classList.remove('hidden');
+      fallback.classList.add('hidden');
+    } else {
+      avatar.removeAttribute('src');
+      avatar.classList.add('hidden');
+      fallback.classList.remove('hidden');
+    }
+  }
   const authBtn = document.getElementById('authBtn');
   const galleryNav = document.getElementById('galleryNavBtn');
   authBtn.textContent = (currentUser.name || currentUser.email || 'User').split(' ')[0];
@@ -307,8 +325,58 @@ async function logout() {
   document.getElementById('authBtn').onclick = () => showSection('auth');
   const galleryNav = document.getElementById('galleryNavBtn');
   if (galleryNav) galleryNav.style.display = 'none';
+  const profileControl = document.getElementById('profileControl');
+  if (profileControl) profileControl.style.display = 'none';
   closeLightbox();
   showSection('auth');
+}
+
+// ===== PROFILE PICTURE =====
+async function handleProfilePhotoChange(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if (!file || !currentUser) return;
+  if (!file.type.startsWith('image/')) {
+    alert('Please choose an image file.');
+    input.value = '';
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    alert('Please choose an image smaller than 5 MB.');
+    input.value = '';
+    return;
+  }
+
+  const button = document.getElementById('profileAvatarButton');
+  if (button) button.disabled = true;
+  try {
+    let avatarUrl;
+    if (cloudEnabled && sbClient && currentUser.id) {
+      avatarUrl = await uploadImageToCloud(file);
+      const { error } = await sbClient.auth.updateUser({
+        data: { avatar_url: avatarUrl }
+      });
+      if (error) throw error;
+    } else {
+      avatarUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Could not read that image.'));
+        reader.readAsDataURL(file);
+      });
+      localStorage.setItem(`racle_avatar_${currentUser.email}`, avatarUrl);
+    }
+    currentUser.avatarUrl = avatarUrl;
+    if (!cloudEnabled || !sbClient) {
+      localStorage.setItem('racle_user', JSON.stringify(currentUser));
+    }
+    updateUIForLoggedIn();
+  } catch (error) {
+    alert(error.message || 'Could not update profile picture. Please try again.');
+  } finally {
+    if (button) button.disabled = false;
+    input.value = '';
+  }
 }
 
 // ===== CLOUD PINS =====
