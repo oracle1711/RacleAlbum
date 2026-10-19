@@ -1198,3 +1198,17 @@ a:focus-visible,
   #gallery .pin-card, #gallery .pin-card img { transition: none !important; }
   #gallery .pin-card:hover { transform: none; }
 }
+
+#gallery .pin-card-no-image {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(34, 211, 238, .13), transparent 48%),
+    linear-gradient(145deg, rgba(15, 23, 42, .95), rgba(30, 27, 75, .55));
+  color: rgba(165, 243, 252, .8);
+  font-size: 2rem;
+}
+@media (max-width: 600px) {
+  #gallery .pin-card-no-image { min-height: 105px; }
+}
