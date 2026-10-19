@@ -1470,3 +1470,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .status-light { animation: none; }
   *, *::before, *::after { transition-duration: .01ms !important; }
 }
+
+/* Profile picture control */
+.profile-control { align-items: center; justify-content: center; margin: 0 2px; }
+.profile-avatar-button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; padding: 0; overflow: hidden;
+  border: 1px solid rgba(34,211,238,.8); border-radius: 50%;
+  color: #a5f3fc; background: linear-gradient(135deg, rgba(8,145,178,.35), rgba(124,58,237,.4));
+  box-shadow: 0 0 14px rgba(34,211,238,.16); cursor: pointer;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.profile-avatar-button:hover { transform: translateY(-1px); box-shadow: 0 0 20px rgba(34,211,238,.36); }
+.profile-avatar-button:disabled { opacity: .65; cursor: wait; }
+.profile-avatar-image { display: block; width: 100%; height: 100%; object-fit: cover; }
+#profileAvatarFallback { font-size: 1.25rem; }
+@media (max-width: 600px) { .profile-avatar-button { width: 36px; height: 36px; } }
