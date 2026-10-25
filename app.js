@@ -1,4 +1,39 @@
 
+
+function getAvatarPosition() {
+  try { return JSON.parse(localStorage.getItem('racle_avatar_position') || '{"x":50,"y":50}'); }
+  catch { return { x: 50, y: 50 }; }
+}
+function applyAvatarPosition() {
+  const pos = getAvatarPosition();
+  const avatar = document.getElementById('profileAvatar');
+  if (avatar) avatar.style.objectPosition = `${pos.x}% ${pos.y}%`;
+}
+function updateAvatarPositionPreview() {
+  const x = Number(document.getElementById('avatarPositionX')?.value ?? 50);
+  const y = Number(document.getElementById('avatarPositionY')?.value ?? 50);
+  const xv = document.getElementById('avatarPositionXValue');
+  const yv = document.getElementById('avatarPositionYValue');
+  if (xv) xv.textContent = x + '%';
+  if (yv) yv.textContent = y + '%';
+  const avatar = document.getElementById('profileAvatar');
+  if (avatar) avatar.style.objectPosition = `${x}% ${y}%`;
+}
+function saveAvatarPosition() {
+  const x = Number(document.getElementById('avatarPositionX')?.value ?? 50);
+  const y = Number(document.getElementById('avatarPositionY')?.value ?? 50);
+  localStorage.setItem('racle_avatar_position', JSON.stringify({ x, y }));
+  applyAvatarPosition();
+}
+function resetAvatarPosition() {
+  const x = document.getElementById('avatarPositionX');
+  const y = document.getElementById('avatarPositionY');
+  if (x) x.value = 50;
+  if (y) y.value = 50;
+  saveAvatarPosition();
+  updateAvatarPositionPreview();
+}
+
 // ===== SETTINGS =====
 function populateSettings() {
   const name = document.getElementById('settingsName');
@@ -17,6 +52,12 @@ function populateSettings() {
   if (compact) compact.checked = localStorage.getItem('racle_compact_cards') === 'on';
   document.body.classList.toggle('ra-motion-off', motion ? !motion.checked : false);
   document.body.classList.toggle('ra-compact-cards', compact ? compact.checked : false);
+  const pos = getAvatarPosition();
+  const x = document.getElementById('avatarPositionX');
+  const y = document.getElementById('avatarPositionY');
+  if (x) x.value = pos.x;
+  if (y) y.value = pos.y;
+  updateAvatarPositionPreview();
 }
 
 async function saveAccountSettings() {
