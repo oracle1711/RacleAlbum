@@ -15,7 +15,7 @@
   <meta property="og:description" content="A personal space to save, organize, search, and revisit your photos and videos.">
   <meta property="og:url" content="https://oracle1711.github.io/RacleAlbum/">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="styles.css?v=20261025-4">
+  <link rel="stylesheet" href="styles.css?v=20261025-5">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -102,6 +102,12 @@
     <div class="album-panel">
       <div class="album-panel-heading"><div class="album-heading-icon">▣</div><div><h2>My Album</h2><p id="pinCount">Your memories</p></div><span class="album-total" id="pinSubtitle">Your personal board</span></div>
       <div class="toolbar" id="albumToolbar">
+      <div class="media-filters" role="group" aria-label="Filter memories">
+        <button class="media-filter active" type="button" data-filter="all" aria-pressed="true" onclick="setMediaFilter('all')">All</button>
+        <button class="media-filter" type="button" data-filter="photos" aria-pressed="false" onclick="setMediaFilter('photos')">Photos</button>
+        <button class="media-filter" type="button" data-filter="videos" aria-pressed="false" onclick="setMediaFilter('videos')">Videos</button>
+        <button class="media-filter" type="button" data-filter="favorites" aria-pressed="false" onclick="setMediaFilter('favorites')">♥ Favorites</button>
+      </div>
       <select id="sortSelect" onchange="renderGallery()">
         <option value="newest">Newest first</option>
         <option value="oldest">Oldest first</option>
@@ -221,7 +227,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261025-2"></script>
-  <script src="app.js?v=20261025-4"></script>
+  <script src="app.js?v=20261025-5"></script>
   <script>
     (() => {
       const bindAuthTabs = () => {
