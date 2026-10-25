@@ -1677,3 +1677,12 @@ body.ra-compact-cards #gallery .pin-card img { height:clamp(110px,11vw,165px); }
 #gallery .pin-card .video-card-preview { height:clamp(145px,15vw,220px); }
 body.ra-compact-cards #gallery .pin-card .video-card-preview { height:clamp(110px,11vw,165px); }
 @media(max-width:700px) { #gallery .pin-card .video-card-preview { height:clamp(105px,24vw,170px); } }
+
+/* Profile image framing controls */
+.avatar-framing { margin-top:18px; padding-top:16px; border-top:1px solid rgba(61,119,194,.25); }
+.avatar-framing h3 { color:#e3f1ff; font-size:13px; font-weight:600; margin:0 0 5px; }
+.avatar-framing p { color:#819bc5; font-size:11px; line-height:1.5; margin:0 0 14px; }
+.avatar-framing label { display:flex; justify-content:space-between; gap:10px; margin:12px 0 7px; color:#a9c8f5; font-size:12px; }
+.avatar-framing label span { color:#43dcff; font-variant-numeric:tabular-nums; }
+.avatar-framing input[type="range"] { width:100%; accent-color:#16cfff; cursor:pointer; }
+.avatar-framing .btn { margin-top:14px; }
