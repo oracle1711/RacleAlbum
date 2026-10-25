@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>RacleAlbum - Your Personal Photo Space</title>
-  <link rel="stylesheet" href="styles.css?v=20261025-1">
+  <link rel="stylesheet" href="styles.css?v=20261025-2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
       <button class="side-link active" id="sideHomeBtn" onclick="showSection('gallery')"><span>⌂</span> Home</button>
       <button class="side-link" onclick="showSection('gallery')"><span>▣</span> My Albums</button>
       <button class="side-link" onclick="showSection('upload')"><span>⇧</span> Upload</button>
-      <button class="side-link" onclick="showSection(currentUser ? 'gallery' : 'auth')"><span>⚙</span> Settings</button>
+      <button class="side-link" id="sideSettingsBtn" onclick="showSection('settings')"><span>⚙</span> Settings</button>
     </div>
   </aside>
   <nav class="navbar">
@@ -105,6 +105,40 @@
     <input type="file" id="quickPhoto" accept="image/*" multiple style="display:none" onchange="quickUpload(event)">
   </section>
 
+  <section id="settings" class="section settings-page">
+    <div class="settings-heading">
+      <p class="gallery-eyebrow">ACCOUNT CONTROL CENTER</p>
+      <h1>Settings</h1>
+      <p>Manage your profile, privacy, and album data.</p>
+    </div>
+    <div class="settings-grid">
+      <article class="settings-card">
+        <div class="settings-card-title"><span>♟</span><div><h2>Profile & Account</h2><p>Keep your account details up to date.</p></div></div>
+        <div class="settings-field"><label for="settingsName">Display name</label><input id="settingsName" type="text" maxlength="60" placeholder="Your name" autocomplete="name"></div>
+        <div class="settings-field"><label for="settingsEmail">Email address</label><input id="settingsEmail" type="email" readonly aria-describedby="emailHelp"><small id="emailHelp">Your login email is shown here.</small></div>
+        <button class="btn primary" id="saveSettingsBtn" type="button" onclick="saveAccountSettings()">Save profile</button>
+        <button class="btn settings-secondary" type="button" onclick="document.getElementById('profilePhotoInput').click()">Change profile picture</button>
+      </article>
+      <article class="settings-card">
+        <div class="settings-card-title"><span>◈</span><div><h2>Appearance & Experience</h2><p>Adjust the interface to your preference.</p></div></div>
+        <label class="settings-toggle" for="motionToggle"><span><strong>Animated background</strong><small>Turn off floating particles for a calmer interface.</small></span><input id="motionToggle" type="checkbox" checked onchange="saveAppearanceSettings()"></label>
+        <label class="settings-toggle" for="compactToggle"><span><strong>Compact photo cards</strong><small>Fit more memories on the screen.</small></span><input id="compactToggle" type="checkbox" onchange="saveAppearanceSettings()"></label>
+        <div class="settings-info"><span class="settings-status-dot"></span><span id="settingsStorageStatus">Checking account mode…</span></div>
+      </article>
+      <article class="settings-card">
+        <div class="settings-card-title"><span>▤</span><div><h2>Album & Data</h2><p>Keep a backup of your memories list.</p></div></div>
+        <div class="settings-stat"><span>Items in this album</span><strong id="settingsItemCount">0</strong></div>
+        <button class="btn settings-secondary" type="button" onclick="exportAlbumData()">Export album data (JSON)</button>
+        <button class="btn settings-secondary" type="button" onclick="syncAlbumFromCloud()">Sync album from cloud</button>
+        <p class="settings-help">Export creates a backup file containing photo details and image links. It may not contain the original image files themselves.</p>
+      </article>
+      <article class="settings-card settings-danger-card">
+        <div class="settings-card-title"><span>⏻</span><div><h2>Session & Security</h2><p>Use shared devices carefully.</p></div></div>
+        <p class="settings-help">Sign out when you finish using a shared or public computer. Your cloud album stays in your account.</p>
+        <button class="btn settings-signout" type="button" onclick="logout()">Sign out</button>
+      </article>
+    </div>
+  </section>
   </main>
   <div id="lightbox" class="lightbox hidden" onclick="closeLightbox(event)">
     <button class="lightbox-close" onclick="closeLightbox()">×</button>
@@ -164,8 +198,8 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20261025-1"></script>
-  <script src="app.js?v=20261025-1"></script>
+  <script src="config.js?v=20261025-2"></script>
+  <script src="app.js?v=20261025-2"></script>
   <script>
     (() => {
       const bindAuthTabs = () => {
