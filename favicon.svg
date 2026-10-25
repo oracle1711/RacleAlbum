@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#27f4ff"/><stop offset=".55" stop-color="#1687ff"/><stop offset="1" stop-color="#b25cff"/></linearGradient>
+    <linearGradient id="scene" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#172c83"/><stop offset="1" stop-color="#06152d"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="48" fill="#050a19" stroke="url(#edge)" stroke-width="5"/>
+  <g filter="url(#glow)">
+    <rect x="45" y="49" width="128" height="126" rx="13" fill="#0a1d4c" stroke="#687bff" stroke-width="4" transform="rotate(-12 109 112)"/>
+    <rect x="64" y="42" width="128" height="126" rx="13" fill="#0b2b63" stroke="#24cfff" stroke-width="4" transform="rotate(-4 128 105)"/>
+    <rect x="67" y="54" width="122" height="112" rx="10" fill="url(#scene)" stroke="#e2ffff" stroke-width="3"/>
+    <circle cx="151" cy="79" r="13" fill="#fff6d5"/>
+    <path d="M70 126 101 91 120 112 141 88 186 135V160H70Z" fill="#1466d5"/>
+    <path d="M70 139 103 113 124 129 147 111 186 143V160H70Z" fill="#061c47"/>
+    <path d="M70 148Q100 138 128 151T186 148V160H70Z" fill="#13d8ff" opacity=".75"/>
+    <path d="M36 148C72 202 188 183 216 111" fill="none" stroke="url(#edge)" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <path d="M58 198H198" stroke="#1bdfff" stroke-width="3" stroke-linecap="round"/>
+  <text x="128" y="222" font-family="Arial,sans-serif" font-size="25" font-weight="800" text-anchor="middle" fill="#f0fbff" letter-spacing="1">RA</text>
+</svg>
