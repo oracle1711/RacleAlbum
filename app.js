@@ -1,3 +1,85 @@
+
+// ===== SETTINGS =====
+function populateSettings() {
+  const name = document.getElementById('settingsName');
+  const email = document.getElementById('settingsEmail');
+  const status = document.getElementById('settingsStorageStatus');
+  const count = document.getElementById('settingsItemCount');
+  if (name) name.value = currentUser?.name || '';
+  if (email) email.value = currentUser?.email || '';
+  if (status) status.textContent = cloudEnabled && sbClient
+    ? 'Cloud sync enabled · account data stored with Supabase'
+    : 'Local mode · data stays in this browser only';
+  if (count) count.textContent = String(items.length);
+  const motion = document.getElementById('motionToggle');
+  const compact = document.getElementById('compactToggle');
+  if (motion) motion.checked = localStorage.getItem('racle_animated_bg') !== 'off';
+  if (compact) compact.checked = localStorage.getItem('racle_compact_cards') === 'on';
+  document.body.classList.toggle('ra-motion-off', motion ? !motion.checked : false);
+  document.body.classList.toggle('ra-compact-cards', compact ? compact.checked : false);
+}
+
+async function saveAccountSettings() {
+  if (!currentUser) { alert('Please log in first.'); return; }
+  const nameInput = document.getElementById('settingsName');
+  const button = document.getElementById('saveSettingsBtn');
+  const name = nameInput?.value.trim() || '';
+  if (!name) { alert('Please enter a display name.'); nameInput?.focus(); return; }
+  if (button) { button.disabled = true; button.textContent = 'Saving…'; }
+  try {
+    if (cloudEnabled && sbClient && currentUser.id) {
+      const { error } = await sbClient.auth.updateUser({ data: { name } });
+      if (error) throw error;
+    }
+    currentUser.name = name;
+    localStorage.setItem('racle_user', JSON.stringify(currentUser));
+    updateUIForLoggedIn();
+    const welcomeName = document.getElementById('welcomeName');
+    if (welcomeName) welcomeName.textContent = name.split(' ')[0];
+    const profileName = document.getElementById('profileName');
+    if (profileName) profileName.textContent = name.split(' ')[0];
+    alert('Profile updated.');
+  } catch (error) {
+    alert(error?.message || 'Could not save your profile.');
+  } finally {
+    if (button) { button.disabled = false; button.textContent = 'Save profile'; }
+  }
+}
+
+function saveAppearanceSettings() {
+  const motion = document.getElementById('motionToggle');
+  const compact = document.getElementById('compactToggle');
+  localStorage.setItem('racle_animated_bg', motion?.checked ? 'on' : 'off');
+  localStorage.setItem('racle_compact_cards', compact?.checked ? 'on' : 'off');
+  document.body.classList.toggle('ra-motion-off', motion ? !motion.checked : false);
+  document.body.classList.toggle('ra-compact-cards', compact ? compact.checked : false);
+}
+
+function exportAlbumData() {
+  if (!currentUser) { alert('Please log in first.'); return; }
+  const backup = {
+    exportedAt: new Date().toISOString(),
+    app: 'RacleAlbum',
+    account: { name: currentUser.name || '', email: currentUser.email || '' },
+    itemCount: items.length,
+    items: items.map(item => ({
+      title: item.title || 'Untitled',
+      note: item.text || item.note || '',
+      date: item.date || '',
+      photoUrl: item.photo || item.image_url || ''
+    }))
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'raclealbum-backup.json';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 // ===== LIVE BACKGROUND =====
 const canvas = document.getElementById('bgCanvas');
 const ctx = canvas.getContext('2d');
@@ -66,6 +148,11 @@ function connectParticles() {
 }
 
 function animateBackground() {
+  if (document.body.classList.contains('ra-motion-off')) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    requestAnimationFrame(animateBackground);
+    return;
+  }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const g = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, canvas.width * 0.7);
   g.addColorStop(0, 'rgba(8, 145, 178, 0.06)');
@@ -148,9 +235,19 @@ async function init() {
 }
 
 function showSection(id) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  if (['gallery', 'upload', 'settings'].includes(id) && !currentUser) {
+    alert('Please log in to access your account.');
+    id = 'auth';
+  }
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.getElementById(id)?.classList.add('active');
+  document.querySelectorAll('.side-link').forEach(button => button.classList.remove('active'));
+  const activeSide = id === 'settings' ? document.getElementById('sideSettingsBtn') : document.getElementById('sideHomeBtn');
+  if (activeSide) activeSide.classList.add('active');
   if (id === 'gallery' && currentUser) renderGallery();
+  if (id === 'settings' && currentUser) populateSettings();
 }
 
 function switchTab(tab) {
