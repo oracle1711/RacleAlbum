@@ -571,10 +571,18 @@ async function handleUpload(e) {
       const pin = await addPinCloud({ title, text, file });
       items.unshift(pin);
     } else {
-      const preview = document.getElementById('photoPreview');
+      let storedMedia = null;
+      if (file) {
+        storedMedia = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Could not read this media file.'));
+          reader.readAsDataURL(file);
+        });
+      }
       items.unshift({
         id: Date.now(), title, text,
-        photo: file ? (file.type.startsWith('video/') ? document.getElementById('videoPreview').src : preview.src) : null,
+        photo: storedMedia,
         mediaType: file ? detectMediaType(file.type) : null,
         date: new Date().toLocaleString(), ts: Date.now()
       });
