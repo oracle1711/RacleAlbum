@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>RacleAlbum - Your Personal Photo Space</title>
-  <link rel="stylesheet" href="styles.css?v=20261025-3">
+  <link rel="stylesheet" href="styles.css?v=20261025-4">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -117,6 +117,15 @@
         <div class="settings-field"><label for="settingsName">Display name</label><input id="settingsName" type="text" maxlength="60" placeholder="Your name" autocomplete="name"></div>
         <div class="settings-field"><label for="settingsEmail">Email address</label><input id="settingsEmail" type="email" readonly aria-describedby="emailHelp"><small id="emailHelp">Your login email is shown here.</small></div>
         <button class="btn primary" id="saveSettingsBtn" type="button" onclick="saveAccountSettings()">Save profile</button>
+        <div class="avatar-framing">
+          <h3>Profile photo position</h3>
+          <p>Adjust which part of your photo appears inside the circle.</p>
+          <label for="avatarPositionX">Left ↔ Right <span id="avatarPositionXValue">50%</span></label>
+          <input id="avatarPositionX" type="range" min="0" max="100" value="50" oninput="updateAvatarPositionPreview()" onchange="saveAvatarPosition()">
+          <label for="avatarPositionY">Top ↕ Bottom <span id="avatarPositionYValue">50%</span></label>
+          <input id="avatarPositionY" type="range" min="0" max="100" value="50" oninput="updateAvatarPositionPreview()" onchange="saveAvatarPosition()">
+          <button class="btn settings-secondary" type="button" onclick="resetAvatarPosition()">Reset photo position</button>
+        </div>
         <button class="btn settings-secondary" type="button" onclick="document.getElementById('profilePhotoInput').click()">Change profile picture</button>
       </article>
       <article class="settings-card">
@@ -201,7 +210,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261025-2"></script>
-  <script src="app.js?v=20261025-3"></script>
+  <script src="app.js?v=20261025-4"></script>
   <script>
     (() => {
       const bindAuthTabs = () => {
