@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://oracle1711.github.io/RacleAlbum/sitemap.xml
