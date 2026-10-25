@@ -228,6 +228,35 @@ let currentUser = null;
 let items = [];
 let currentLightboxId = null;
 let searchTimer = null;
+let currentMediaFilter = 'all';
+
+function getFavoriteIds() {
+  if (!currentUser || !currentUser.email) return [];
+  try { return JSON.parse(localStorage.getItem('racle_favorites_' + currentUser.email) || '[]'); }
+  catch (_) { return []; }
+}
+
+function isFavorite(id) { return getFavoriteIds().some(value => String(value) === String(id)); }
+
+function setMediaFilter(filter) {
+  currentMediaFilter = ['all', 'photos', 'videos', 'favorites'].includes(filter) ? filter : 'all';
+  document.querySelectorAll('.media-filter').forEach(button => {
+    const active = button.dataset.filter === currentMediaFilter;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  renderGallery();
+}
+
+function toggleFavorite(id, event) {
+  if (event) event.stopPropagation();
+  if (!currentUser || !currentUser.email) { alert('Please log in to save favorites.'); return; }
+  const favorites = getFavoriteIds();
+  const index = favorites.findIndex(value => String(value) === String(id));
+  if (index >= 0) favorites.splice(index, 1); else favorites.push(id);
+  localStorage.setItem('racle_favorites_' + currentUser.email, JSON.stringify(favorites));
+  renderGallery();
+}
 
 function setCloudStatus(msg) {
   const el = document.getElementById('cloudStatus');
@@ -782,6 +811,9 @@ function getFilteredSortedItems() {
   const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
   const sort = document.getElementById('sortSelect')?.value || 'newest';
   let list = [...items];
+  if (currentMediaFilter === 'photos') list = list.filter(i => i.photo && detectMediaType(i.mediaType || i.photo) !== 'video');
+  else if (currentMediaFilter === 'videos') list = list.filter(i => i.photo && detectMediaType(i.mediaType || i.photo) === 'video');
+  else if (currentMediaFilter === 'favorites') list = list.filter(i => isFavorite(i.id));
   if (q) {
     const terms = q.split(/\s+/).filter(Boolean);
     list = list.filter(i => {
@@ -820,7 +852,8 @@ function renderGallery() {
     const idAttr = typeof item.id === 'string' ? `'${item.id}'` : item.id;
     const isVideo = item.photo && detectMediaType(item.mediaType || item.photo) === 'video';
     const media = item.photo ? (isVideo ? `<div class="video-card-preview"><video src="${item.photo}" muted playsinline preload="metadata"></video><span class="video-play-badge">▶ VIDEO</span></div>` : `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">`) : '<div class="pin-card-no-image">✦</div>';
-    html += `<div class="pin-card" onclick="openLightbox(${idAttr})" tabindex="0" role="button"><button class="pin-delete" type="button" title="Delete" onclick="deletePin(${idAttr}, event)">×</button>${media}<div class="pin-card-body"><h3>${escapeHtml(item.title || 'Untitled')}</h3>${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}<div class="pin-card-date">${isVideo ? '▶ Video · ' : ''}${escapeHtml(item.date || '')}</div></div></div>`;
+    const favorite = isFavorite(item.id);
+    html += `<div class="pin-card" onclick="openLightbox(${idAttr})" tabindex="0" role="button"><button class="pin-favorite ${favorite ? 'is-favorite' : ''}" type="button" title="${favorite ? 'Remove from favorites' : 'Add to favorites'}" aria-label="${favorite ? 'Remove from favorites' : 'Add to favorites'}" aria-pressed="${favorite}" onclick="toggleFavorite(${idAttr}, event)">♥</button><button class="pin-delete" type="button" title="Delete" aria-label="Delete memory" onclick="deletePin(${idAttr}, event)">×</button>${media}<div class="pin-card-body"><h3>${escapeHtml(item.title || 'Untitled')}</h3>${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}<div class="pin-card-date">${isVideo ? '▶ Video · ' : ''}${escapeHtml(item.date || '')}</div></div></div>`;
   });
   grid.innerHTML = html;
 }
