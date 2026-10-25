@@ -463,6 +463,7 @@ async function loadPinsFromCloud() {
     title: row.title || 'Untitled',
     text: row.note || '',
     photo: row.image_url,
+    mediaType: detectMediaType(row.image_url),
     date: row.created_at ? new Date(row.created_at).toLocaleString() : '',
     ts: row.created_at ? new Date(row.created_at).getTime() : 0,
     storagePath: row.image_url || null
@@ -537,19 +538,21 @@ async function deletePinCloud(id) {
 
 function previewPhoto(e) {
   const file = e.target.files[0];
-  if (file && !validateImage(file)) { e.target.value = ''; return; }
-  const preview = document.getElementById('photoPreview');
+  if (file && !validateMedia(file)) { e.target.value = ''; return; }
+  const imagePreview = document.getElementById('photoPreview');
+  const videoPreview = document.getElementById('videoPreview');
+  imagePreview.classList.add('hidden');
+  videoPreview?.classList.add('hidden');
+  if (videoPreview) { videoPreview.pause(); videoPreview.removeAttribute('src'); videoPreview.load(); }
   if (file) {
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      preview.src = ev.target.result;
-      preview.classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
+    const preview = file.type.startsWith('video/') ? videoPreview : imagePreview;
+    const url = URL.createObjectURL(file);
+    preview.src = url;
+    preview.classList.remove('hidden');
     preview._file = file;
   } else {
-    preview.classList.add('hidden');
-    preview._file = null;
+    imagePreview._file = null;
+    if (videoPreview) videoPreview._file = null;
   }
 }
 
@@ -559,8 +562,8 @@ async function handleUpload(e) {
   const title = document.getElementById('itemTitle').value.trim();
   const text = document.getElementById('itemText').value.trim();
   const photoInput = document.getElementById('itemPhoto');
-  const file = photoInput.files[0] || document.getElementById('photoPreview')._file;
-  if (file && !validateImage(file)) return;
+  const file = photoInput.files[0] || document.getElementById('photoPreview')._file || document.getElementById('videoPreview')._file;
+  if (file && !validateMedia(file)) return;
   const submitBtn = document.querySelector('#uploadForm button[type="submit"]');
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; }
   try {
@@ -571,7 +574,8 @@ async function handleUpload(e) {
       const preview = document.getElementById('photoPreview');
       items.unshift({
         id: Date.now(), title, text,
-        photo: preview.classList.contains('hidden') ? null : preview.src,
+        photo: file ? (file.type.startsWith('video/') ? document.getElementById('videoPreview').src : preview.src) : null,
+        mediaType: file ? detectMediaType(file.type) : null,
         date: new Date().toLocaleString(), ts: Date.now()
       });
       localStorage.setItem(`racle_items_${currentUser.email}`, JSON.stringify(items));
@@ -581,6 +585,8 @@ async function handleUpload(e) {
     preview.classList.add('hidden');
     preview.src = '';
     preview._file = null;
+    const videoPreview = document.getElementById('videoPreview');
+    if (videoPreview) { videoPreview.pause(); videoPreview.classList.add('hidden'); videoPreview.removeAttribute('src'); videoPreview.load(); videoPreview._file = null; }
     showSection('gallery');
     renderGallery();
   } catch (err) {
@@ -590,9 +596,20 @@ async function handleUpload(e) {
   }
 }
 
-function validateImage(file) {
-  if (!file.type || !file.type.startsWith('image/')) { alert('Please choose an image file.'); return false; }
-  if (file.size > 10 * 1024 * 1024) { alert('Please choose an image smaller than 10 MB.'); return false; }
+function detectMediaType(value) {
+  if (value && (value.startsWith('video/') || /\.(mp4|webm|mov|m4v|ogv)(?:[?#].*)?$/i.test(value))) return 'video';
+  return 'image';
+}
+function validateMedia(file) {
+  if (!file.type || (!file.type.startsWith('image/') && !file.type.startsWith('video/'))) {
+    alert('Please choose an image or video file.'); return false;
+  }
+  const isVideo = file.type.startsWith('video/');
+  const maxBytes = isVideo ? (cloudEnabled ? 45 : 15) * 1024 * 1024 : 10 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    alert(isVideo ? (cloudEnabled ? 'Please choose a video smaller than 45 MB.' : 'In local mode, videos must be smaller than 15 MB. Connect cloud storage for larger videos.') : 'Please choose an image smaller than 10 MB.');
+    return false;
+  }
   return true;
 }
 
@@ -601,7 +618,7 @@ function triggerQuickUpload() { document.getElementById('quickPhoto').click(); }
 async function quickUpload(e) {
   const files = Array.from(e.target.files || []);
   if (!files.length || !currentUser) return;
-  if (files.some(file => !validateImage(file))) { e.target.value = ''; return; }
+  if (files.some(file => !validateMedia(file))) { e.target.value = ''; return; }
   const uploadBtn = document.querySelector('.toolbar-btn.primary') || document.querySelector('.toolbar-btn');
   const originalLabel = uploadBtn?.textContent;
   if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.textContent = `Uploading 0/${files.length}…`; }
@@ -616,7 +633,7 @@ async function quickUpload(e) {
         await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (ev) => {
-            items.unshift({ id: Date.now() + i, title, text: '', photo: ev.target.result, date: new Date().toLocaleString(), ts: Date.now() + i });
+            items.unshift({ id: Date.now() + i, title, text: '', photo: ev.target.result, mediaType: detectMediaType(file.type), date: new Date().toLocaleString(), ts: Date.now() + i });
             resolve();
           };
           reader.onerror = reject;
@@ -652,8 +669,12 @@ function openLightbox(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
   currentLightboxId = id;
-  document.getElementById('lightboxImg').src = item.photo || '';
-  document.getElementById('lightboxImg').style.display = item.photo ? 'block' : 'none';
+  const image = document.getElementById('lightboxImg');
+  const video = document.getElementById('lightboxVideo');
+  const isVideo = item.photo && detectMediaType(item.mediaType || item.photo) === 'video';
+  image.src = isVideo ? '' : (item.photo || '');
+  image.style.display = item.photo && !isVideo ? 'block' : 'none';
+  if (video) { video.pause(); video.src = isVideo ? item.photo : ''; video.classList.toggle('hidden', !isVideo); if (isVideo) video.load(); }
   document.getElementById('lightboxTitle').textContent = item.title || 'Untitled';
   document.getElementById('lightboxText').textContent = item.text || '';
   document.getElementById('lightboxDate').textContent = item.date || '';
@@ -663,6 +684,8 @@ function openLightbox(id) {
 function closeLightbox(e) {
   if (e && e.target !== e.currentTarget && !e.target.classList.contains('lightbox-close')) return;
   document.getElementById('lightbox').classList.add('hidden');
+  const video = document.getElementById('lightboxVideo');
+  if (video) { video.pause(); video.removeAttribute('src'); video.load(); video.classList.add('hidden'); }
   currentLightboxId = null;
 }
 
@@ -698,10 +721,10 @@ async function editCurrentPin() {
 
 function downloadCurrentPin() {
   const item = items.find(i => i.id === currentLightboxId);
-  if (!item || !item.photo) { alert('No image to download'); return; }
+  if (!item || !item.photo) { alert('No media to download'); return; }
   const a = document.createElement('a');
   a.href = item.photo;
-  a.download = (item.title || 'racle-album') + '.jpg';
+  a.download = (item.title || 'racle-album') + (detectMediaType(item.mediaType || item.photo) === 'video' ? '.mp4' : '.jpg');
   a.target = '_blank';
   a.click();
 }
@@ -746,7 +769,9 @@ function renderGallery() {
   let html = '';
   list.forEach((item) => {
     const idAttr = typeof item.id === 'string' ? `'${item.id}'` : item.id;
-    html += `<div class="pin-card" onclick="openLightbox(${idAttr})" tabindex="0" role="button"><button class="pin-delete" type="button" title="Delete" onclick="deletePin(${idAttr}, event)">×</button>${item.photo ? `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">` : '<div class="pin-card-no-image">✦</div>'}<div class="pin-card-body"><h3>${escapeHtml(item.title || 'Untitled')}</h3>${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}<div class="pin-card-date">${escapeHtml(item.date || '')}</div></div></div>`;
+    const isVideo = item.photo && detectMediaType(item.mediaType || item.photo) === 'video';
+    const media = item.photo ? (isVideo ? `<div class="video-card-preview"><video src="${item.photo}" muted playsinline preload="metadata"></video><span class="video-play-badge">▶ VIDEO</span></div>` : `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">`) : '<div class="pin-card-no-image">✦</div>';
+    html += `<div class="pin-card" onclick="openLightbox(${idAttr})" tabindex="0" role="button"><button class="pin-delete" type="button" title="Delete" onclick="deletePin(${idAttr}, event)">×</button>${media}<div class="pin-card-body"><h3>${escapeHtml(item.title || 'Untitled')}</h3>${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}<div class="pin-card-date">${isVideo ? '▶ Video · ' : ''}${escapeHtml(item.date || '')}</div></div></div>`;
   });
   grid.innerHTML = html;
 }
