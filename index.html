@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>RacleAlbum - Your Personal Photo Space</title>
-  <link rel="stylesheet" href="styles.css?v=20261025-2">
+  <link rel="stylesheet" href="styles.css?v=20261025-3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -86,7 +86,7 @@
   <main class="workspace"><section id="gallery" class="section">
     <div class="welcome-hero">
       <div class="welcome-title"><span class="welcome-crown">♛</span><div><h1>Welcome back, <span id="welcomeName">Rako</span></h1><p>Your memories are more than just photos... they're your story.</p></div></div>
-      <button class="hero-upload" type="button" onclick="triggerQuickUpload()"><span>◎</span> Add New Photo</button>
+      <button class="hero-upload" type="button" onclick="triggerQuickUpload()"><span>◎</span> Add Photo or Video</button>
     </div>
     <div class="album-panel">
       <div class="album-panel-heading"><div class="album-heading-icon">▣</div><div><h2>My Album</h2><p id="pinCount">Your memories</p></div><span class="album-total" id="pinSubtitle">Your personal board</span></div>
@@ -102,7 +102,7 @@
 
     <div id="galleryGrid" class="pin-grid"></div>
     </div>
-    <input type="file" id="quickPhoto" accept="image/*" multiple style="display:none" onchange="quickUpload(event)">
+    <input type="file" id="quickPhoto" accept="image/*,video/*" multiple style="display:none" onchange="quickUpload(event)">
   </section>
 
   <section id="settings" class="section settings-page">
@@ -144,6 +144,7 @@
     <button class="lightbox-close" onclick="closeLightbox()">×</button>
     <div class="lightbox-content" onclick="event.stopPropagation()">
       <img id="lightboxImg" src="" alt="">
+       <video id="lightboxVideo" controls playsinline class="hidden" aria-label="Saved video"></video>
       <div class="lightbox-info">
         <h2 id="lightboxTitle"></h2>
         <p id="lightboxText"></p>
@@ -174,15 +175,16 @@
             <textarea id="itemText" rows="3" placeholder="Add a note..."></textarea>
           </div>
           <div class="form-group">
-            <label>Photo</label>
+            <label>Photo or Video</label>
             <div class="file-drop">
-              <input type="file" id="itemPhoto" accept="image/*" onchange="previewPhoto(event)">
+              <input type="file" id="itemPhoto" accept="image/*,video/*" onchange="previewPhoto(event)">
               <div class="drop-content">
-                <span>📷</span>
-                <p>Click to choose a photo · Max 10 MB</p>
+                <span>📷 🎬</span>
+                <p>Choose a photo or video · Videos up to 45 MB in cloud mode</p>
               </div>
             </div>
-            <img id="photoPreview" class="photo-preview hidden" alt="Preview">
+            <img id="photoPreview" class="photo-preview hidden" alt="Photo preview">
+            <video id="videoPreview" class="photo-preview hidden" controls muted playsinline aria-label="Video preview"></video>
           </div>
           <button type="submit" class="btn primary full">Save to Album</button>
         </form>
@@ -199,7 +201,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261025-2"></script>
-  <script src="app.js?v=20261025-2"></script>
+  <script src="app.js?v=20261025-3"></script>
   <script>
     (() => {
       const bindAuthTabs = () => {
