@@ -1709,3 +1709,8 @@ body.ra-compact-cards #gallery .pin-card .video-card-preview { height:clamp(110p
 .collage-select-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin:14px 0}.collage-select-grid label{position:relative;display:flex;flex-direction:column;gap:5px;padding:6px;border:1px solid rgba(148,163,184,.22);border-radius:10px;overflow:hidden}.collage-select-grid img{width:100%;height:95px;object-fit:cover;border-radius:6px}.collage-select-grid input{position:absolute;top:10px;left:10px;width:18px;height:18px;z-index:1}.collage-select-grid span{font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pin-folder{position:absolute;left:10px;top:10px;z-index:2;max-width:calc(100% - 66px);padding:5px 8px;border:1px solid rgba(103,232,249,.25);border-radius:999px;background:rgba(8,13,28,.82);color:#a5f3fc;font-size:.72rem;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:600px){.feature-strip{display:grid;grid-template-columns:1fr 1fr}.feature-tool{font-size:.78rem;padding:9px 7px}.feature-panel{padding:12px}.collage-select-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Optional hunter-system visual mode */
+body.ra-hunter-mode .album-panel,body.ra-hunter-mode .settings-card,body.ra-hunter-mode .auth-card{border-color:rgba(34,211,238,.42);box-shadow:0 0 0 1px rgba(34,211,238,.08),0 0 26px rgba(34,211,238,.11)}
+body.ra-hunter-mode .welcome-crown,body.ra-hunter-mode .brand-mark{filter:drop-shadow(0 0 9px rgba(34,211,238,.8))}
+body.ra-hunter-mode .feature-tool:hover,body.ra-hunter-mode .media-filter.active{box-shadow:0 0 16px rgba(34,211,238,.22)}
