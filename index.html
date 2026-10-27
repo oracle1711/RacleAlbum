@@ -15,7 +15,7 @@
   <meta property="og:description" content="A personal space to save, organize, search, and revisit your photos and videos.">
   <meta property="og:url" content="https://oracle1711.github.io/RacleAlbum/">
   <meta name="twitter:card" content="summary">
-  <link rel="stylesheet" href="styles.css?v=20261025-5">
+  <link rel="stylesheet" href="styles.css?v=20261027-1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -117,7 +117,7 @@
       <button class="btn primary toolbar-btn" onclick="triggerQuickUpload()">+ Upload</button>
     </div>
 
-    <div id="galleryGrid" class="pin-grid"></div>
+    <div class="feature-strip"><button class="btn feature-tool" onclick="openTimeline()">◷ Memories timeline</button><button class="btn feature-tool" onclick="openCollageMaker()">▦ Collage maker</button><button class="btn feature-tool" onclick="showStorageDashboard()">◈ Storage details</button><button class="btn feature-tool" onclick="promptSmartSearch()">⌕ Smart search</button></div><div id="featurePanel" class="feature-panel hidden" aria-live="polite"></div><div id="galleryGrid" class="pin-grid"></div>
     </div>
     <input type="file" id="quickPhoto" accept="image/*,video/*" multiple style="display:none" onchange="quickUpload(event)">
   </section>
@@ -176,7 +176,7 @@
         <p id="lightboxText"></p>
         <p id="lightboxDate" class="lightbox-date"></p>
         <div class="lightbox-actions">
-          <button class="btn" onclick="editCurrentPin()">Edit details</button>
+          <button class="btn" onclick="previousMemory()">← Previous</button><button class="btn" onclick="nextMemory()">Next →</button><button class="btn" id="slideshowBtn" onclick="toggleSlideshow()">▶ Slideshow</button><button class="btn" onclick="editCurrentPin()">Edit details</button>
           <button class="btn" onclick="downloadCurrentPin()">Download</button>
           <button class="btn danger" onclick="deleteCurrentPin()">Delete</button>
         </div>
@@ -227,7 +227,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261025-2"></script>
-  <script src="app.js?v=20261025-5"></script>
+  <script src="app.js?v=20261027-1"></script>
   <script>
     (() => {
       const bindAuthTabs = () => {
