@@ -814,6 +814,8 @@ function downloadCurrentPin() {
 /* ===== Album tools: folders, timeline, viewer, collage, storage, smart search ===== */
 let slideshowTimer = null;
 let collageSelection = new Set();
+function toggleHunterMode(){const on=!document.body.classList.contains('ra-hunter-mode');document.body.classList.toggle('ra-hunter-mode',on);localStorage.setItem('racle_hunter_mode',on?'on':'off');const b=document.getElementById('hunterModeBtn');if(b)b.textContent=on?'⚡ Hunter System: ON':'⚡ Hunter System';}
+if(localStorage.getItem('racle_hunter_mode')==='on')document.body.classList.add('ra-hunter-mode');
 function getFolderMap(){if(!currentUser?.email)return{};try{return JSON.parse(localStorage.getItem('racle_folders_'+currentUser.email)||'{}')}catch(_){return{}}}
 function getFolder(id){return getFolderMap()[String(id)]||'Unsorted'}
 function setFolder(id,name){if(!currentUser?.email)return;const map=getFolderMap();map[String(id)]=name.trim().slice(0,40)||'Unsorted';localStorage.setItem('racle_folders_'+currentUser.email,JSON.stringify(map));renderGallery()}
