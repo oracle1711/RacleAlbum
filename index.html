@@ -117,7 +117,7 @@
       <button class="btn primary toolbar-btn" onclick="triggerQuickUpload()">+ Upload</button>
     </div>
 
-    <div class="feature-strip"><button class="btn feature-tool" onclick="openTimeline()">◷ Memories timeline</button><button class="btn feature-tool" onclick="openCollageMaker()">▦ Collage maker</button><button class="btn feature-tool" onclick="showStorageDashboard()">◈ Storage details</button><button class="btn feature-tool" onclick="promptSmartSearch()">⌕ Smart search</button></div><div id="featurePanel" class="feature-panel hidden" aria-live="polite"></div><div id="galleryGrid" class="pin-grid"></div>
+    <div class="feature-strip"><button class="btn feature-tool" onclick="openTimeline()">◷ Memories timeline</button><button class="btn feature-tool" onclick="openCollageMaker()">▦ Collage maker</button><button class="btn feature-tool" onclick="showStorageDashboard()">◈ Storage details</button><button class="btn feature-tool" onclick="promptSmartSearch()">⌕ Smart search</button><button class="btn feature-tool" onclick="toggleHunterMode()" id="hunterModeBtn">⚡ Hunter System</button></div><div id="featurePanel" class="feature-panel hidden" aria-live="polite"></div><div id="galleryGrid" class="pin-grid"></div>
     </div>
     <input type="file" id="quickPhoto" accept="image/*,video/*" multiple style="display:none" onchange="quickUpload(event)">
   </section>
