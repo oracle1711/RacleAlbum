@@ -757,9 +757,12 @@ function openLightbox(id) {
   document.getElementById('lightboxText').textContent = item.text || '';
   document.getElementById('lightboxDate').textContent = item.date || '';
   document.getElementById('lightbox').classList.remove('hidden');
+  const slideBtn = document.getElementById('slideshowBtn'); if (slideBtn) slideBtn.textContent = slideshowTimer ? 'Ⅱ Stop slideshow' : '▶ Slideshow';
 }
 
 function closeLightbox(e) {
+  if (slideshowTimer) { clearInterval(slideshowTimer); slideshowTimer = null; }
+  const slideBtn = document.getElementById('slideshowBtn'); if (slideBtn) slideBtn.textContent = '▶ Slideshow';
   if (e && e.target !== e.currentTarget && !e.target.classList.contains('lightbox-close')) return;
   document.getElementById('lightbox').classList.add('hidden');
   const video = document.getElementById('lightboxVideo');
@@ -807,6 +810,27 @@ function downloadCurrentPin() {
   a.click();
 }
 
+
+/* ===== Album tools: folders, timeline, viewer, collage, storage, smart search ===== */
+let slideshowTimer = null;
+let collageSelection = new Set();
+function getFolderMap(){if(!currentUser?.email)return{};try{return JSON.parse(localStorage.getItem('racle_folders_'+currentUser.email)||'{}')}catch(_){return{}}}
+function getFolder(id){return getFolderMap()[String(id)]||'Unsorted'}
+function setFolder(id,name){if(!currentUser?.email)return;const map=getFolderMap();map[String(id)]=name.trim().slice(0,40)||'Unsorted';localStorage.setItem('racle_folders_'+currentUser.email,JSON.stringify(map));renderGallery()}
+function manageFolder(id,event){if(event)event.stopPropagation();const v=prompt('Folder name for this memory:',getFolder(id));if(v!==null)setFolder(id,v)}
+function closeFeaturePanel(){const p=document.getElementById('featurePanel');if(p){p.classList.add('hidden');p.innerHTML=''}}
+function openTimeline(){const p=document.getElementById('featurePanel');if(!p)return;const groups={};[...items].sort((a,b)=>(b.ts||0)-(a.ts||0)).forEach(i=>{const d=i.ts?new Date(i.ts):null;const key=d&&!isNaN(d)?d.toLocaleDateString(undefined,{year:'numeric',month:'long'}):'Date unknown';(groups[key]||=[]).push(i)});p.classList.remove('hidden');p.innerHTML='<div class="feature-panel-head"><h3>◷ Memories timeline</h3><button class="btn" onclick="closeFeaturePanel()">Close</button></div>'+(Object.entries(groups).map(([m,arr])=>'<section class="timeline-group"><h4>'+escapeHtml(m)+' · '+arr.length+'</h4><div class="timeline-items">'+arr.map(i=>'<button class="timeline-memory" onclick="openLightbox('+JSON.stringify(i.id)+')">'+(i.photo&&detectMediaType(i.mediaType||i.photo)!=='video'?'<img src="'+escapeHtml(i.photo)+'" alt="" loading="lazy">':'<span>🎬</span>')+'<span>'+escapeHtml(i.title||'Untitled')+'</span></button>').join('')+'</div></section>').join('')||'<p>No memories yet.</p>')}
+function formatBytes(n){if(!n)return'0 B';const u=['B','KB','MB','GB'];const i=Math.min(Math.floor(Math.log(n)/Math.log(1024)),3);return(n/Math.pow(1024,i)).toFixed(i?1:0)+' '+u[i]}
+function showStorageDashboard(){const p=document.getElementById('featurePanel');if(!p)return;const photos=items.filter(i=>i.photo&&detectMediaType(i.mediaType||i.photo)!=='video').length,videos=items.length-photos,links=items.filter(i=>/^https?:/.test(i.photo||'')).length;p.classList.remove('hidden');p.innerHTML='<div class="feature-panel-head"><h3>◈ Album dashboard</h3><button class="btn" onclick="closeFeaturePanel()">Close</button></div><div class="storage-stats"><div><strong>'+items.length+'</strong><span>Total memories</span></div><div><strong>'+photos+'</strong><span>Photos</span></div><div><strong>'+videos+'</strong><span>Videos</span></div><div><strong>'+links+'</strong><span>Cloud/web URLs</span></div></div><p class="feature-note">'+(cloudEnabled&&sbClient?'Supabase connection detected. Actual cloud quota is not queried here.':'Local mode: data is stored in this browser.')+'</p><p class="feature-note">Original file sizes are not available for existing items, so this is not a precise storage meter.</p>'}
+function promptSmartSearch(){const input=document.getElementById('searchInput');if(!input)return;const q=prompt('Search titles and notes. You can also try folder:Family, before:2026-01-01, or after:2025-01-01. This is local keyword search, not AI image recognition.');if(q!==null){input.value=q;onSearchInput()}}
+function applyEnhancedSearch(list,q){if(!q)return list;const fm=q.match(/(?:^|\s)folder:("[^"]+"|\S+)/i),bm=q.match(/(?:^|\s)before:(\d{4}-\d{2}-\d{2})/i),am=q.match(/(?:^|\s)after:(\d{4}-\d{2}-\d{2})/i);const terms=q.replace(/(?:^|\s)folder:("[^"]+"|\S+)/ig,' ').replace(/(?:^|\s)before:\d{4}-\d{2}-\d{2}/ig,' ').replace(/(?:^|\s)after:\d{4}-\d{2}-\d{2}/ig,' ').trim().toLowerCase().split(/\s+/).filter(Boolean);return list.filter(i=>{if(fm&&getFolder(i.id).toLowerCase()!==fm[1].replace(/"/g,'').toLowerCase())return false;if(bm&&i.ts&&i.ts>=new Date(bm[1]).getTime())return false;if(am&&i.ts&&i.ts<new Date(am[1]).getTime())return false;const hay=((i.title||'')+' '+(i.text||'')+' '+getFolder(i.id)).toLowerCase();return terms.every(t=>hay.includes(t))})}
+function navigateMemory(step){const list=getFilteredSortedItems();if(!list.length)return;let i=list.findIndex(x=>String(x.id)===String(currentLightboxId));openLightbox(list[(i<0?0:(i+step+list.length)%list.length)].id)}
+function previousMemory(){navigateMemory(-1)}function nextMemory(){navigateMemory(1)}
+function toggleSlideshow(){const b=document.getElementById('slideshowBtn');if(slideshowTimer){clearInterval(slideshowTimer);slideshowTimer=null;if(b)b.textContent='▶ Slideshow';return}if(!getFilteredSortedItems().length){alert('Add a memory first.');return}if(b)b.textContent='Ⅱ Stop slideshow';if(currentLightboxId==null)openLightbox(getFilteredSortedItems()[0].id);slideshowTimer=setInterval(()=>navigateMemory(1),3500)}
+function openCollageMaker(){const p=document.getElementById('featurePanel');if(!p)return;const photos=items.filter(i=>i.photo&&detectMediaType(i.mediaType||i.photo)!=='video');p.classList.remove('hidden');p.innerHTML='<div class="feature-panel-head"><h3>▦ Collage maker</h3><button class="btn" onclick="closeFeaturePanel()">Close</button></div><p>Select up to 9 photos to create a downloadable square collage.</p><div class="collage-select-grid">'+photos.map(i=>'<label><input type="checkbox" value="'+escapeHtml(String(i.id))+'" onchange="selectCollagePhoto(this)" '+(collageSelection.has(String(i.id))?'checked':'')+'><img src="'+escapeHtml(i.photo)+'" alt="'+escapeHtml(i.title||'Photo')+'"><span>'+escapeHtml(i.title||'Untitled')+'</span></label>').join('')+'</div><button class="btn primary" type="button" onclick="generateCollage()">Create collage</button><p id="collageStatus" class="feature-note"></p>'}
+function selectCollagePhoto(el){const id=String(el.value);if(el.checked&&collageSelection.size>=9){el.checked=false;alert('Choose up to 9 photos.');return}if(el.checked)collageSelection.add(id);else collageSelection.delete(id)}
+async function generateCollage(){const chosen=items.filter(i=>collageSelection.has(String(i.id))&&i.photo&&detectMediaType(i.mediaType||i.photo)!=='video').slice(0,9),status=document.getElementById('collageStatus');if(!chosen.length){if(status)status.textContent='Select at least one photo.';return}const c=document.createElement('canvas');c.width=1200;c.height=1200;const x=c.getContext('2d');x.fillStyle='#080d1c';x.fillRect(0,0,1200,1200);const cols=chosen.length===1?1:chosen.length<=4?2:3,gap=12,cell=(1200-gap*(cols+1))/cols;try{for(let n=0;n<chosen.length;n++){const im=new Image();im.crossOrigin='anonymous';await new Promise((res,rej)=>{im.onload=res;im.onerror=()=>rej(new Error('Could not load a photo. Some cloud images may block collage export.'));im.src=chosen[n].photo});const xx=gap+(n%cols)*(cell+gap),yy=gap+Math.floor(n/cols)*(cell+gap),scale=Math.max(cell/im.width,cell/im.height),w=im.width*scale,h=im.height*scale;x.save();x.beginPath();x.rect(xx,yy,cell,cell);x.clip();x.drawImage(im,xx+(cell-w)/2,yy+(cell-h)/2,w,h);x.restore()}const a=document.createElement('a');a.download='raclealbum-collage.png';a.href=c.toDataURL('image/png');a.click();if(status)status.textContent='Collage downloaded.'}catch(e){if(status)status.textContent=e.message||'Could not create collage.'}}
+
 function getFilteredSortedItems() {
   const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
   const sort = document.getElementById('sortSelect')?.value || 'newest';
@@ -814,13 +838,7 @@ function getFilteredSortedItems() {
   if (currentMediaFilter === 'photos') list = list.filter(i => i.photo && detectMediaType(i.mediaType || i.photo) !== 'video');
   else if (currentMediaFilter === 'videos') list = list.filter(i => i.photo && detectMediaType(i.mediaType || i.photo) === 'video');
   else if (currentMediaFilter === 'favorites') list = list.filter(i => isFavorite(i.id));
-  if (q) {
-    const terms = q.split(/\s+/).filter(Boolean);
-    list = list.filter(i => {
-      const hay = ((i.title || '') + ' ' + (i.text || '')).toLowerCase();
-      return terms.every(t => hay.includes(t));
-    });
-  }
+  if (q) list = applyEnhancedSearch(list, q);
   if (sort === 'oldest') list.sort((a, b) => (a.ts || 0) - (b.ts || 0));
   else if (sort === 'title') list.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   else list.sort((a, b) => (b.ts || 0) - (a.ts || 0));
@@ -853,7 +871,7 @@ function renderGallery() {
     const isVideo = item.photo && detectMediaType(item.mediaType || item.photo) === 'video';
     const media = item.photo ? (isVideo ? `<div class="video-card-preview"><video src="${item.photo}" muted playsinline preload="metadata"></video><span class="video-play-badge">▶ VIDEO</span></div>` : `<img src="${item.photo}" alt="${escapeHtml(item.title)}" loading="lazy">`) : '<div class="pin-card-no-image">✦</div>';
     const favorite = isFavorite(item.id);
-    html += `<div class="pin-card" onclick="openLightbox(${idAttr})" tabindex="0" role="button"><button class="pin-favorite ${favorite ? 'is-favorite' : ''}" type="button" title="${favorite ? 'Remove from favorites' : 'Add to favorites'}" aria-label="${favorite ? 'Remove from favorites' : 'Add to favorites'}" aria-pressed="${favorite}" onclick="toggleFavorite(${idAttr}, event)">♥</button><button class="pin-delete" type="button" title="Delete" aria-label="Delete memory" onclick="deletePin(${idAttr}, event)">×</button>${media}<div class="pin-card-body"><h3>${escapeHtml(item.title || 'Untitled')}</h3>${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}<div class="pin-card-date">${isVideo ? '▶ Video · ' : ''}${escapeHtml(item.date || '')}</div></div></div>`;
+    html += `<div class="pin-card" onclick="openLightbox(${idAttr})" tabindex="0" role="button"><button class="pin-favorite ${favorite ? 'is-favorite' : ''}" type="button" title="${favorite ? 'Remove from favorites' : 'Add to favorites'}" aria-label="${favorite ? 'Remove from favorites' : 'Add to favorites'}" aria-pressed="${favorite}" onclick="toggleFavorite(${idAttr}, event)">♥</button><button class="pin-delete" type="button" title="Delete" aria-label="Delete memory" onclick="deletePin(${idAttr}, event)">×</button>${media}<button class="pin-folder" type="button" title="Organize into folder" onclick="manageFolder(${idAttr}, event)">▱ ${escapeHtml(getFolder(item.id))}</button><div class="pin-card-body"><h3>${escapeHtml(item.title || 'Untitled')}</h3>${item.text ? `<p>${escapeHtml(item.text)}</p>` : ''}<div class="pin-card-date">${isVideo ? '▶ Video · ' : ''}${escapeHtml(item.date || '')}</div></div></div>`;
   });
   grid.innerHTML = html;
 }
