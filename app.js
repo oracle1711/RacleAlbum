@@ -800,6 +800,67 @@ async function editCurrentPin() {
   }
 }
 
+async function shareCurrentPin() {
+  const item = items.find(i => String(i.id) === String(currentLightboxId));
+  if (!item) { alert('Open a memory first.'); return; }
+  const title = item.title || 'A memory from Racle Album';
+  const note = item.text ? '\n' + item.text : '';
+  const mediaUrl = item.photo || '';
+  const shareText = title + note + (mediaUrl ? '\n' + mediaUrl : '');
+  const button = document.getElementById('shareMemoryBtn');
+  const originalLabel = button?.textContent || 'Share';
+  if (button) { button.disabled = true; button.textContent = 'Preparing…'; }
+  try {
+    // Prefer the operating system share sheet. On supported phones this can expose
+    // Gmail, Bluetooth, nearby sharing, messaging apps and other installed targets.
+    if (mediaUrl && navigator.share && navigator.canShare && /^https?:|^data:/.test(mediaUrl)) {
+      try {
+        const response = await fetch(mediaUrl);
+        if (response.ok) {
+          const blob = await response.blob();
+          if (blob.size) {
+            const video = detectMediaType(item.mediaType || mediaUrl) === 'video';
+            const ext = (blob.type.split('/')[1] || (video ? 'mp4' : 'jpg')).split(';')[0].replace('jpeg','jpg');
+            const file = new File([blob], (title.replace(/[\\\\/:*?"<>|]+/g, '-').trim() || 'racle-memory') + '.' + ext, {type: blob.type || (video ? 'video/mp4' : 'image/jpeg')});
+            if (navigator.canShare({files:[file]})) {
+              await navigator.share({title, text: item.text || 'Shared from Racle Album', files:[file]});
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        if (err?.name === 'AbortError') return;
+        console.warn('File sharing unavailable; trying link sharing.', err);
+      }
+    }
+    if (navigator.share) {
+      await navigator.share({title, text: shareText, ...(mediaUrl && /^https?:/.test(mediaUrl) ? {url: mediaUrl} : {})});
+      return;
+    }
+    // Desktop/browser fallback: prepare an email and copy a shareable link when possible.
+    if (mediaUrl && /^https?:/.test(mediaUrl)) {
+      const mail = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(shareText);
+      window.location.href = mail;
+      try { await navigator.clipboard.writeText(shareText); } catch (_) {}
+      alert('Your email app should open. The memory link was included in the email; if copying is permitted, it was copied too. This shares a link, not an attachment.');
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        alert('Memory details copied. This browser cannot open the system share menu; use Gmail or another app and paste the details. For an attachment, download the media first.');
+      } catch (_) {
+        alert('Sharing is not supported by this browser. Use Download, then attach the saved file in Gmail or another app.');
+      }
+    }
+  } catch (err) {
+    if (err?.name !== 'AbortError') {
+      console.error('Racle Album share failed:', err);
+      alert('Could not share this memory. Try Download, then attach the file in Gmail or another app.');
+    }
+  } finally {
+    if (button) { button.disabled = false; button.textContent = originalLabel; }
+  }
+}
+
 async function downloadCurrentPin() {
   const item = items.find(i => String(i.id) === String(currentLightboxId));
   if (!item || !item.photo) { alert('No media to download'); return; }
