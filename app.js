@@ -819,8 +819,20 @@ function getCurrentShareInfo() {
 }
 function shareViaGmail() {
   const info = getCurrentShareInfo(); if (!info) return;
-  const body = info.text + (info.url ? '' : '\n\nTo send the actual photo/video, attach the file you saved using Download.');
-  window.location.href = 'mailto:?subject=' + encodeURIComponent(info.title) + '&body=' + encodeURIComponent(body);
+  const email = (document.getElementById('shareEmailDestination')?.value || '').trim();
+  if (!email) {
+    const field = document.getElementById('shareEmailDestination');
+    if (field) { field.focus(); field.setCustomValidity('Enter the destination email address.'); field.reportValidity(); }
+    else alert('Enter the destination email address.');
+    return;
+  }
+  const field = document.getElementById('shareEmailDestination');
+  if (field) {
+    field.setCustomValidity('');
+    if (!field.checkValidity()) { field.reportValidity(); return; }
+  }
+  const body = info.text + (info.url ? '' : '\n\nTo send the actual photo/video as an attachment, download it first and attach it in your email app.');
+  window.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(info.title) + '&body=' + encodeURIComponent(body);
 }
 function shareViaWhatsApp() {
   const info = getCurrentShareInfo(); if (!info) return;
