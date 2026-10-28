@@ -177,6 +177,7 @@
         <p id="lightboxDate" class="lightbox-date"></p>
         <div class="lightbox-actions">
           <button class="btn" onclick="previousMemory()">← Previous</button><button class="btn" onclick="nextMemory()">Next →</button><button class="btn" id="slideshowBtn" onclick="toggleSlideshow()">▶ Slideshow</button><button class="btn" onclick="editCurrentPin()">Edit details</button>
+          <button class="btn" id="shareMemoryBtn" onclick="shareCurrentPin()">Share</button>
           <button class="btn" onclick="downloadCurrentPin()">Download</button>
           <button class="btn danger" onclick="deleteCurrentPin()">Delete</button>
         </div>
@@ -227,7 +228,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261025-2"></script>
-  <script src="app.js?v=20261027-1"></script>
+  <script src="app.js?v=20261028-share1"></script>
   <script>
     (() => {
       const bindAuthTabs = () => {
