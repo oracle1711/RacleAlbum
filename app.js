@@ -800,14 +800,45 @@ async function editCurrentPin() {
   }
 }
 
-function downloadCurrentPin() {
-  const item = items.find(i => i.id === currentLightboxId);
+async function downloadCurrentPin() {
+  const item = items.find(i => String(i.id) === String(currentLightboxId));
   if (!item || !item.photo) { alert('No media to download'); return; }
-  const a = document.createElement('a');
-  a.href = item.photo;
-  a.download = (item.title || 'racle-album') + (detectMediaType(item.mediaType || item.photo) === 'video' ? '.mp4' : '.jpg');
-  a.target = '_blank';
-  a.click();
+
+  const button = document.querySelector('.lightbox-actions button[onclick="downloadCurrentPin()"]');
+  const originalLabel = button?.textContent || 'Download';
+  if (button) { button.disabled = true; button.textContent = 'Preparing download…'; }
+
+  let objectUrl = null;
+  try {
+    // Fetch the media into a Blob so the browser downloads the file instead of
+    // navigating to the storage URL. This also supports data: URLs from local albums.
+    const response = await fetch(item.photo);
+    if (!response.ok) throw new Error('The media server returned HTTP ' + response.status);
+    const blob = await response.blob();
+    if (!blob.size) throw new Error('The downloaded file is empty.');
+
+    const isVideo = detectMediaType(item.mediaType || item.photo) === 'video' || blob.type.startsWith('video/');
+    const mimeExt = (blob.type.split('/')[1] || '').split(';')[0].toLowerCase().replace('jpeg', 'jpg');
+    const ext = isVideo ? (mimeExt && mimeExt !== 'octet-stream' ? mimeExt : 'mp4') :
+      (mimeExt && ['jpg','png','gif','webp','avif','heic','heif'].includes(mimeExt) ? mimeExt : 'jpg');
+    const safeTitle = (item.title || 'racle-album').replace(/[\\\\/:*?"<>|]+/g, '-').trim() || 'racle-album';
+    objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = safeTitle + '.' + ext;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    // Revoke after the browser has had time to start saving the Blob.
+    setTimeout(() => { if (objectUrl) URL.revokeObjectURL(objectUrl); }, 60000);
+  } catch (err) {
+    console.error('Racle Album download failed:', err);
+    alert('Could not download this media without opening its URL. Check your connection and try again. If this is a cloud file, its storage server must allow cross-origin downloads (CORS).');
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+  } finally {
+    if (button) { button.disabled = false; button.textContent = originalLabel; }
+  }
 }
 
 
