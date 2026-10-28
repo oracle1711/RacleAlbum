@@ -960,8 +960,34 @@ async function downloadCurrentPin() {
 /* ===== Album tools: folders, timeline, viewer, collage, storage, smart search ===== */
 let slideshowTimer = null;
 let collageSelection = new Set();
-function toggleHunterMode(){const on=!document.body.classList.contains('ra-hunter-mode');document.body.classList.toggle('ra-hunter-mode',on);localStorage.setItem('racle_hunter_mode',on?'on':'off');const b=document.getElementById('hunterModeBtn');if(b)b.textContent=on?'⚡ Hunter System: ON':'⚡ Hunter System';}
-if(localStorage.getItem('racle_hunter_mode')==='on')document.body.classList.add('ra-hunter-mode');
+function showHunterSystemNotice(enabled) {
+  const existing = document.querySelector('.ra-system-notice');
+  if (existing) existing.remove();
+  const notice = document.createElement('div');
+  notice.className = 'ra-system-notice';
+  notice.setAttribute('role', 'status');
+  notice.innerHTML = enabled
+    ? '<small>SHADOW MONARCH PROTOCOL</small>HUNTER SYSTEM ACTIVATED · RANK: S'
+    : '<small>SYSTEM MESSAGE</small>HUNTER EFFECTS DISABLED';
+  document.body.appendChild(notice);
+  window.setTimeout(() => notice.remove(), 2600);
+}
+function toggleHunterMode(){
+  const on=!document.body.classList.contains('ra-hunter-mode');
+  document.body.classList.toggle('ra-hunter-mode',on);
+  try { localStorage.setItem('racle_hunter_mode',on?'on':'off'); } catch (_) {}
+  const b=document.getElementById('hunterModeBtn');
+  if(b) {
+    b.textContent=on?'⚡ Hunter System: ON':'⚡ Hunter System';
+    b.setAttribute('aria-pressed',String(on));
+  }
+  showHunterSystemNotice(on);
+}
+if(localStorage.getItem('racle_hunter_mode')==='on') {
+  document.body.classList.add('ra-hunter-mode');
+  const hunterButton=document.getElementById('hunterModeBtn');
+  if(hunterButton){hunterButton.textContent='⚡ Hunter System: ON';hunterButton.setAttribute('aria-pressed','true');}
+}
 function getFolderMap(){if(!currentUser?.email)return{};try{return JSON.parse(localStorage.getItem('racle_folders_'+currentUser.email)||'{}')}catch(_){return{}}}
 function getFolder(id){return getFolderMap()[String(id)]||'Unsorted'}
 function setFolder(id,name){if(!currentUser?.email)return;const map=getFolderMap();map[String(id)]=name.trim().slice(0,40)||'Unsorted';localStorage.setItem('racle_folders_'+currentUser.email,JSON.stringify(map));renderGallery()}
