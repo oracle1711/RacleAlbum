@@ -1791,3 +1791,88 @@ body.ra-hunter-mode .btn:focus-visible,body.ra-hunter-mode input:focus-visible,b
 @keyframes ra-meter-charge{from{width:0}to{width:78%}}
 @media(max-width:600px){.ra-hunter-status{left:8px;bottom:8px;width:195px;padding:10px}.ra-summon-ring{width:76vw}.ra-summon-core{width:76px;height:76px;font-size:32px}.ra-summon-caption{top:calc(50% + 100px);letter-spacing:6px}}
 @media(prefers-reduced-motion:reduce){.ra-shadow-summon,.ra-summon-ring,.ra-summon-core,.ra-summon-caption,.ra-shadow-mote,.ra-hunter-status,.ra-hud-meter i{animation-duration:.01ms!important;animation-iteration-count:1!important}.ra-shadow-summon{display:none}}
+
+
+/* ===== SHADOW MONARCH PROFILE AVATAR RING ===== */
+.profile-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+.profile-avatar-button {
+  position: relative;
+  z-index: 0;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  padding: 3px;
+  border: 0;
+  border-radius: 50%;
+  overflow: visible;
+  background: linear-gradient(145deg, #67f7ff 0%, #087dff 38%, #a855f7 72%, #67f7ff 100%);
+  box-shadow: 0 0 0 1px rgba(103,247,255,.38), 0 0 13px rgba(0,190,255,.42), 0 0 27px rgba(124,58,237,.2);
+  isolation: isolate;
+  transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
+}
+.profile-avatar-button::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 28deg, #5ff7ff 42deg, transparent 58deg 118deg, #a855f7 145deg, transparent 168deg 238deg, #168bff 265deg, transparent 288deg 360deg);
+  animation: avatar-orbit 5s linear infinite;
+  filter: drop-shadow(0 0 4px rgba(34,211,238,.72));
+}
+.profile-avatar-button::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(226,250,255,.92);
+  box-shadow: inset 0 0 0 2px rgba(3,10,30,.9), inset 0 0 13px rgba(34,211,238,.28);
+  pointer-events: none;
+}
+.profile-avatar-button:hover {
+  transform: scale(1.06);
+  filter: saturate(1.2);
+  box-shadow: 0 0 0 1px rgba(103,247,255,.7), 0 0 18px rgba(0,190,255,.65), 0 0 36px rgba(124,58,237,.34);
+}
+.profile-avatar-image {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #050b1c;
+  border: 2px solid rgba(4,12,32,.96);
+}
+#profileAvatarFallback {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  color: #e8fcff;
+  font-size: 25px;
+  background: radial-gradient(circle at 32% 24%, rgba(34,211,238,.38), transparent 38%), linear-gradient(145deg, #101f48, #170d36 72%);
+  border: 2px solid rgba(4,12,32,.96);
+  text-shadow: 0 0 10px rgba(34,211,238,.8);
+}
+@keyframes avatar-orbit {
+  to { transform: rotate(360deg); }
+}
+@media (max-width: 600px) {
+  .profile-avatar-button { width: 46px; height: 46px; flex-basis: 46px; padding: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .profile-avatar-button::before { animation: none; }
+}
