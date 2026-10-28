@@ -841,7 +841,8 @@ async function copyMemoryDetails() {
     prompt('Copy these memory details:', info.text || info.title);
   }
 }
-\nasync function shareCurrentPin() {
+
+async function shareCurrentPin() {
   const item = items.find(i => String(i.id) === String(currentLightboxId));
   if (!item) { alert('Open a memory first.'); return; }
   const title = item.title || 'A memory from Racle Album';
