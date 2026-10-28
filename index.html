@@ -22,6 +22,9 @@
 <style id="racle-share-options-style">
 .share-options-panel.hidden{display:none}.share-options-panel{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding:12px;border:1px solid rgba(92,190,255,.35);border-radius:14px;background:rgba(5,14,35,.94)}
 .share-options-panel .btn{flex:1 1 180px;min-width:0}
+.share-email-row{display:flex;flex:1 1 100%;flex-wrap:wrap;gap:8px;align-items:center}
+.share-email-row label{flex:1 1 100%;font-size:.9rem}
+.share-email-row input{flex:1 1 220px;min-width:0;padding:10px 12px;border:1px solid rgba(92,190,255,.5);border-radius:10px;background:rgba(4,10,24,.9);color:inherit}
 .share-options-note{flex-basis:100%;font-size:.85rem;opacity:.8;margin:4px 0 0}
 </style>
 </head>
@@ -186,7 +189,11 @@
           <button class="btn" id="shareOptionsToggle" onclick="toggleShareOptions()">More share options ▾</button>
           <div id="shareOptionsPanel" class="share-options-panel hidden" aria-label="More ways to share">
             <button class="btn" type="button" onclick="shareCurrentPin()">📲 Share to apps / Bluetooth</button>
-            <button class="btn" type="button" onclick="shareViaGmail()">✉️ Gmail / Email</button>
+            <div class="share-email-row">
+              <label for="shareEmailDestination">Recipient email</label>
+              <input id="shareEmailDestination" type="email" autocomplete="email" placeholder="example@gmail.com" required>
+              <button class="btn" type="button" onclick="shareViaGmail()">✉️ Send by Email</button>
+            </div>
             <button class="btn" type="button" onclick="shareViaWhatsApp()">💬 WhatsApp</button>
             <button class="btn" type="button" onclick="shareViaTelegram()">➤ Telegram</button>
             <button class="btn" type="button" onclick="copyMemoryDetails()">📋 Copy details / link</button>
@@ -243,7 +250,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=20261025-2"></script>
-  <script src="app.js?v=20261028-share3"></script>
+  <script src="app.js?v=20261028-share4"></script>
   <script>
     (() => {
       const bindAuthTabs = () => {
