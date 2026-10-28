@@ -800,7 +800,48 @@ async function editCurrentPin() {
   }
 }
 
-async function shareCurrentPin() {
+
+function toggleShareOptions() {
+  const panel = document.getElementById('shareOptionsPanel');
+  if (!panel) return;
+  panel.classList.toggle('hidden');
+  const button = document.getElementById('shareOptionsToggle');
+  if (button) button.setAttribute('aria-expanded', String(!panel.classList.contains('hidden')));
+}
+function getCurrentShareInfo() {
+  const item = items.find(i => String(i.id) === String(currentLightboxId));
+  if (!item) { alert('Open a memory first.'); return null; }
+  const title = item.title || 'A memory from Racle Album';
+  const note = item.text || '';
+  const url = item.photo && /^https?:\/\//i.test(item.photo) ? item.photo : '';
+  const text = [title, note, url].filter(Boolean).join('\n');
+  return { item, title, note, url, text };
+}
+function shareViaGmail() {
+  const info = getCurrentShareInfo(); if (!info) return;
+  const body = info.text + (info.url ? '' : '\n\nTo send the actual photo/video, attach the file you saved using Download.');
+  window.location.href = 'mailto:?subject=' + encodeURIComponent(info.title) + '&body=' + encodeURIComponent(body);
+}
+function shareViaWhatsApp() {
+  const info = getCurrentShareInfo(); if (!info) return;
+  const text = info.text + (info.url ? '' : '\n\nTo share the actual file, download it first and attach it in WhatsApp.');
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
+}
+function shareViaTelegram() {
+  const info = getCurrentShareInfo(); if (!info) return;
+  const text = info.text + (info.url ? '' : '\n\nTo share the actual file, download it first and attach it in Telegram.');
+  window.open('https://t.me/share/url?url=' + encodeURIComponent(info.url) + '&text=' + encodeURIComponent(text), '_blank', 'noopener,noreferrer');
+}
+async function copyMemoryDetails() {
+  const info = getCurrentShareInfo(); if (!info) return;
+  try {
+    await navigator.clipboard.writeText(info.text || info.title);
+    alert('Memory details copied. Paste them into Gmail, Bluetooth-supported sharing, or another app.');
+  } catch (_) {
+    prompt('Copy these memory details:', info.text || info.title);
+  }
+}
+\nasync function shareCurrentPin() {
   const item = items.find(i => String(i.id) === String(currentLightboxId));
   if (!item) { alert('Open a memory first.'); return; }
   const title = item.title || 'A memory from Racle Album';
