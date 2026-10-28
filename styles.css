@@ -1714,3 +1714,57 @@ body.ra-compact-cards #gallery .pin-card .video-card-preview { height:clamp(110p
 body.ra-hunter-mode .album-panel,body.ra-hunter-mode .settings-card,body.ra-hunter-mode .auth-card{border-color:rgba(34,211,238,.42);box-shadow:0 0 0 1px rgba(34,211,238,.08),0 0 26px rgba(34,211,238,.11)}
 body.ra-hunter-mode .welcome-crown,body.ra-hunter-mode .brand-mark{filter:drop-shadow(0 0 9px rgba(34,211,238,.8))}
 body.ra-hunter-mode .feature-tool:hover,body.ra-hunter-mode .media-filter.active{box-shadow:0 0 16px rgba(34,211,238,.22)}
+
+
+/* Solo Leveling-inspired Hunter System upgrade: purely visual, no album data touched */
+body.ra-hunter-mode::before{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.2;
+  background:
+    radial-gradient(ellipse at 12% 28%,rgba(124,58,237,.18),transparent 34%),
+    radial-gradient(ellipse at 88% 72%,rgba(34,211,238,.14),transparent 32%),
+    repeating-linear-gradient(0deg,transparent 0 49px,rgba(103,232,249,.045) 50px 51px);
+  animation:ra-hunter-aura 12s ease-in-out infinite alternate;
+}
+body.ra-hunter-mode::after{
+  content:"HUNTER SYSTEM  //  SHADOW PROTOCOL";position:fixed;right:18px;bottom:14px;z-index:5;
+  pointer-events:none;font:700 9px/1.4 ui-monospace,SFMono-Regular,monospace;letter-spacing:2px;
+  color:rgba(103,232,249,.48);text-shadow:0 0 12px rgba(34,211,238,.35);
+}
+body.ra-hunter-mode .pin-card{
+  border-color:rgba(103,232,249,.25);
+  box-shadow:0 0 0 1px rgba(34,211,238,.035),0 10px 30px rgba(0,0,0,.2);
+  transition:transform .28s ease,border-color .28s ease,box-shadow .28s ease,filter .28s ease;
+}
+body.ra-hunter-mode .pin-card:hover{
+  transform:translateY(-5px) scale(1.012);border-color:rgba(103,232,249,.72);
+  box-shadow:0 0 0 1px rgba(34,211,238,.15),0 0 28px rgba(34,211,238,.15),0 18px 42px rgba(0,0,0,.34);
+}
+body.ra-hunter-mode .pin-card img,body.ra-hunter-mode .pin-card .video-card-preview video{
+  transition:filter .3s ease;filter:saturate(1.08);
+}
+body.ra-hunter-mode .pin-card:hover img,body.ra-hunter-mode .pin-card:hover .video-card-preview video{
+  filter:saturate(1.22) contrast(1.04);
+}
+body.ra-hunter-mode .brand-mark,body.ra-hunter-mode .welcome-crown{
+  animation:ra-shadow-surge 3.4s ease-in-out infinite;
+}
+body.ra-hunter-mode .btn:focus-visible,body.ra-hunter-mode input:focus-visible,body.ra-hunter-mode textarea:focus-visible{
+  outline:2px solid rgba(103,232,249,.9);outline-offset:3px;box-shadow:0 0 0 5px rgba(34,211,238,.12),0 0 22px rgba(34,211,238,.2);
+}
+.ra-system-notice{
+  position:fixed;top:18px;left:50%;transform:translate(-50%,-18px);z-index:10000;
+  width:min(420px,calc(100vw - 28px));padding:14px 18px;border:1px solid rgba(103,232,249,.6);
+  border-radius:12px;background:linear-gradient(135deg,rgba(5,12,30,.97),rgba(24,14,54,.96));
+  color:#cffafe;text-align:center;letter-spacing:1.4px;font:700 12px/1.6 ui-monospace,SFMono-Regular,monospace;
+  box-shadow:0 0 28px rgba(34,211,238,.2),inset 0 0 18px rgba(124,58,237,.1);
+  opacity:0;pointer-events:none;animation:ra-system-notice 2.4s ease both;
+}
+.ra-system-notice small{display:block;color:#a78bfa;font-size:10px;letter-spacing:2px}
+@keyframes ra-hunter-aura{from{opacity:.12;filter:hue-rotate(0deg)}to{opacity:.32;filter:hue-rotate(25deg)}}
+@keyframes ra-shadow-surge{0%,100%{filter:drop-shadow(0 0 5px rgba(34,211,238,.45))}50%{filter:drop-shadow(0 0 15px rgba(124,58,237,.8))}}
+@keyframes ra-system-notice{0%{opacity:0;transform:translate(-50%,-18px)}12%,78%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-8px)}}
+@media(prefers-reduced-motion:reduce){
+ body.ra-hunter-mode::before,body.ra-hunter-mode .brand-mark,body.ra-hunter-mode .welcome-crown{animation:none!important}
+ .ra-system-notice{animation:none;opacity:1;transform:translate(-50%,0)}
+ body.ra-hunter-mode .pin-card{transition:none}
+}
