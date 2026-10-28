@@ -961,8 +961,7 @@ async function downloadCurrentPin() {
 let slideshowTimer = null;
 let collageSelection = new Set();
 function showHunterSystemNotice(enabled) {
-  const existing = document.querySelector('.ra-system-notice');
-  if (existing) existing.remove();
+  document.querySelector('.ra-system-notice')?.remove();
   const notice = document.createElement('div');
   notice.className = 'ra-system-notice';
   notice.setAttribute('role', 'status');
@@ -971,6 +970,32 @@ function showHunterSystemNotice(enabled) {
     : '<small>SYSTEM MESSAGE</small>HUNTER EFFECTS DISABLED';
   document.body.appendChild(notice);
   window.setTimeout(() => notice.remove(), 2600);
+}
+function showShadowSummon() {
+  const old = document.querySelector('.ra-shadow-summon');
+  if (old) old.remove();
+  const summon = document.createElement('div');
+  summon.className = 'ra-shadow-summon';
+  summon.setAttribute('aria-hidden', 'true');
+  summon.innerHTML = '<div class="ra-summon-ring"></div><div class="ra-summon-core">影</div><div class="ra-summon-caption">ARISE</div>';
+  for (let i = 0; i < 18; i++) {
+    const mote = document.createElement('i');
+    mote.className = 'ra-shadow-mote';
+    mote.style.setProperty('--mote-angle', (i * 20) + 'deg');
+    mote.style.setProperty('--mote-delay', ((i % 6) * 35) + 'ms');
+    summon.appendChild(mote);
+  }
+  document.body.appendChild(summon);
+  window.setTimeout(() => summon.remove(), 1900);
+}
+function updateHunterStatus(enabled) {
+  document.querySelector('.ra-hunter-status')?.remove();
+  if (!enabled) return;
+  const panel = document.createElement('aside');
+  panel.className = 'ra-hunter-status';
+  panel.setAttribute('aria-label', 'Hunter System status');
+  panel.innerHTML = '<div class="ra-hud-kicker">PLAYER STATUS <span>ONLINE</span></div><div class="ra-hud-name">SHADOW MONARCH</div><div class="ra-hud-rank">RANK <strong>S</strong> <span>✦</span></div><div class="ra-hud-meter"><i></i></div><div class="ra-hud-foot">SHADOW EXTRACTION READY</div>';
+  document.body.appendChild(panel);
 }
 function toggleHunterMode(){
   const on=!document.body.classList.contains('ra-hunter-mode');
@@ -981,13 +1006,18 @@ function toggleHunterMode(){
     b.textContent=on?'⚡ Hunter System: ON':'⚡ Hunter System';
     b.setAttribute('aria-pressed',String(on));
   }
+  if (on) showShadowSummon();
+  updateHunterStatus(on);
   showHunterSystemNotice(on);
 }
-if(localStorage.getItem('racle_hunter_mode')==='on') {
-  document.body.classList.add('ra-hunter-mode');
-  const hunterButton=document.getElementById('hunterModeBtn');
-  if(hunterButton){hunterButton.textContent='⚡ Hunter System: ON';hunterButton.setAttribute('aria-pressed','true');}
-}
+try {
+  if(localStorage.getItem('racle_hunter_mode')==='on') {
+    document.body.classList.add('ra-hunter-mode');
+    const hunterButton=document.getElementById('hunterModeBtn');
+    if(hunterButton){hunterButton.textContent='⚡ Hunter System: ON';hunterButton.setAttribute('aria-pressed','true');}
+    updateHunterStatus(true);
+  }
+} catch (_) {}
 function getFolderMap(){if(!currentUser?.email)return{};try{return JSON.parse(localStorage.getItem('racle_folders_'+currentUser.email)||'{}')}catch(_){return{}}}
 function getFolder(id){return getFolderMap()[String(id)]||'Unsorted'}
 function setFolder(id,name){if(!currentUser?.email)return;const map=getFolderMap();map[String(id)]=name.trim().slice(0,40)||'Unsorted';localStorage.setItem('racle_folders_'+currentUser.email,JSON.stringify(map));renderGallery()}
